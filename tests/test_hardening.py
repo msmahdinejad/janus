@@ -666,3 +666,33 @@ def test_dedupe_still_merges_the_same_secret_across_tools(tmp_path):
     out = dedupe([a, b])
     assert len(out) == 1
     assert "builtin" in out[0].extra.get("also_reported_by", []) + [out[0].tool]
+
+def test_discovery_separates_owned_nonprod_and_ignores_third_party(tmp_path):
+    from janus.discovery import discover, scope_toml
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    (repo / "settings.py").write_text(
+        'SITE = "https://staging.example.com"\n'
+        'API = "https://api.example.com"\n'
+        'GRAFANA = "https://grafana.example.com"\n'
+        'CDN = "https://cdn.other.com"\n', encoding="utf-8")
+    result = discover(repo, ["example.com"])
+    assert result.nonprod == ["staging.example.com"]
+    assert result.prod == ["api.example.com"]
+    assert result.infra == ["grafana.example.com"]
+    assert "cdn.other.com" in result.third_party
+
+    toml = scope_toml(result)
+    assert '"staging.example.com"' in toml
+    assert 'deny  = ["api.example.com"]' in toml
+    assert "grafana.example.com" not in toml.split("[limits]")[0]
+
+def test_wall_clock_budget_stops_a_run(tmp_path):
+    from janus.core.http import BudgetExceeded
+    scope = _scope(tmp_path, limits="max_seconds = 0.001")
+    import time as _time
+    client = ScopeClient(scope, transport=FakeTransport({}))
+    _time.sleep(0.01)  # the clock starts when the client is built
+    with pytest.raises(BudgetExceeded, match="wall-clock"):
+        client.get("https://app.test/")

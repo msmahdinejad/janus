@@ -621,6 +621,43 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
     return 0
 
 
+
+def cmd_discover(args: argparse.Namespace) -> int:
+    """Derive candidate targets from a repository's own configuration."""
+    from .discovery import discover, scope_toml
+
+    root = Path(args.repo)
+    if not root.is_dir():
+        print(f"not a directory: {root}", file=sys.stderr)
+        return 2
+    owned = [s.strip() for s in args.owned.split(",") if s.strip()]
+    if not owned:
+        print("--owned is required (the domains you actually own, e.g. example.com,example.org)",
+              file=sys.stderr)
+        return 2
+
+    result = discover(root, owned)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "discovery.json").write_text(
+        json.dumps(result.to_dict(), indent=2, ensure_ascii=False), encoding="utf-8")
+
+    print(f"scanned {result.files_scanned} text files under {root}")
+    print(f"  owned, non-production : {len(result.nonprod)}")
+    for h in result.nonprod[:20]:
+        print(f"      {h}")
+    print(f"  owned, production     : {len(result.prod)} (written to deny)")
+    print(f"  owned, internal tools : {len(result.infra)} (excluded)")
+    print(f"  third-party           : {len(result.third_party)} (ignored)")
+
+    if args.write_scope:
+        target = Path(args.write_scope)
+        target.write_text(scope_toml(result, engagement=args.name, reference=args.reference),
+                          encoding="utf-8")
+        print(f"wrote {target} — review it, then run `janus scan recon --mode passive`")
+    print("reminder: discovery is evidence, not authorization. Confirm the hosts.")
+    return 0
+
 def cmd_llm_shim(args: argparse.Namespace) -> int:
     from .llm_shim import key_from_env, serve
 
@@ -771,6 +808,16 @@ def build_parser() -> argparse.ArgumentParser:
     db.add_argument("--token", default=None,
                     help="bearer token required on /api/* (or set JANUS_DASHBOARD_TOKEN)")
     db.set_defaults(func=cmd_dashboard)
+
+    dv = sub.add_parser("discover", help="derive candidate targets from a repo's config/URLs")
+    dv.add_argument("--repo", required=True)
+    dv.add_argument("--owned", required=True,
+                    help="comma-separated domains you own (e.g. example.com,example.org)")
+    dv.add_argument("--out", default="out/discovery")
+    dv.add_argument("--write-scope", default=None, help="path to write a draft scope.toml")
+    dv.add_argument("--name", default="discovered")
+    dv.add_argument("--reference", default="REVIEW-ME")
+    dv.set_defaults(func=cmd_discover)
 
     sh = sub.add_parser("llm-shim", help="localhost OpenAI-compatible shim for gateways httpx cannot reach")
     sh.add_argument("--upstream", default=None, help="real base URL (default: $LLM_API_BASE)")

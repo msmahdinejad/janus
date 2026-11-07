@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import json as _json
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol
 from urllib.parse import urljoin, urlsplit
@@ -168,6 +169,7 @@ class ScopeClient:
         self.extra_headers = dict(extra_headers or {})
         self.log: list[dict[str, Any]] = []
         self.exhausted = False
+        self.started = time.monotonic()
 
     # -- internals -----------------------------------------------------
     def _record(self, url: str, method: str, status: int | None, allowed: bool,
@@ -205,6 +207,13 @@ class ScopeClient:
                 self._record(url, method, None, False, tuple(decision.reasons))
                 raise ScopeDenied(decision)
 
+            if time.monotonic() - self.started > self.scope.max_seconds:
+                self.exhausted = True
+                self._record(url, method, None, False, ("time budget exhausted",))
+                raise BudgetExceeded(
+                    f"wall-clock budget exhausted ({self.scope.max_seconds:.0f}s); "
+                    "raise [limits].max_seconds only with authorization"
+                )
             try:
                 self.budget.spend(host=self._host(url))
             except BudgetExceeded:

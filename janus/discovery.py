@@ -1,0 +1,163 @@
+"""Derive candidate targets from source instead of asking the operator to type
+a domain list.
+
+A backend repository already knows its own hostnames: CI files, compose files,
+k8s manifests, settings defaults, callback URLs, test fixtures. Those are the
+real attack surface, and finding them is part of the job — not a question to
+ask before the work starts.
+
+What this module will NOT do is decide that a discovered host is authorized.
+Discovery is evidence, not permission: it separates production from
+non-production candidates, sends production hosts to `deny`, and writes a draft
+`scope.toml` a human still has to accept.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Iterable
+from urllib.parse import urlsplit
+
+TEXT_SUFFIXES = {".py", ".js", ".ts", ".yml", ".yaml", ".toml", ".ini", ".conf",
+                 ".cfg", ".env", ".json", ".sh", ".md", ".tf", ".hcl", ".xml", ".properties"}
+
+URL_RE = re.compile(r"https?://[A-Za-z0-9._\-]+(?::\d+)?", re.IGNORECASE)
+
+NONPROD_MARKERS = ("test", "staging", "stage", "dev", "qa", "demo", "sandbox",
+                   "preprod", "beta", "canary")
+
+# Internal tooling is owned but is not "the product": scanning Grafana tells you
+# nothing about the app and tends to trip alerting.
+INFRA_LABELS = {
+    "git", "grafana", "grafana2", "metabase", "sentry", "langfuse", "posthog",
+    "pypi", "wiki", "team", "drive", "net", "argocd", "vault", "rabbitmq",
+    "minio", "jenkins", "sonar", "nexus", "logs", "log-sink", "prometheus",
+}
+
+SKIP_DIRS = {".git", "node_modules", ".venv", "venv", "__pycache__", "dist",
+             "build", "target", ".next", "coverage", ".tox", "site-packages"}
+
+
+@dataclass
+class Discovery:
+    owned: dict[str, list[str]] = field(default_factory=dict)      # host -> files
+    third_party: dict[str, list[str]] = field(default_factory=dict)
+    nonprod: list[str] = field(default_factory=list)
+    prod: list[str] = field(default_factory=list)
+    infra: list[str] = field(default_factory=list)
+    files_scanned: int = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "files_scanned": self.files_scanned,
+            "nonprod": self.nonprod,
+            "prod": self.prod,
+            "infra": self.infra,
+            "owned": {h: sorted(v)[:5] for h, v in sorted(self.owned.items())},
+            "third_party_count": len(self.third_party),
+        }
+
+
+def _iter_files(root: Path) -> Iterable[Path]:
+    for path in root.rglob("*"):
+        if not path.is_file():
+            continue
+        if any(part in SKIP_DIRS for part in path.parts):
+            continue
+        if path.suffix.lower() not in TEXT_SUFFIXES:
+            continue
+        try:
+            if path.stat().st_size > 2_000_000:
+                continue
+        except OSError:
+            continue
+        yield path
+
+
+def _classify(host: str) -> str:
+    labels = host.split(".")
+    if any(lab in INFRA_LABELS for lab in labels[:-2] or labels[:1]):
+        return "infra"
+    joined = host.lower()
+    if any(m in joined for m in NONPROD_MARKERS):
+        return "nonprod"
+    return "prod"
+
+
+def discover(root: str | Path, owned_suffixes: Iterable[str]) -> Discovery:
+    root = Path(root)
+    suffixes = [s.strip().lower().lstrip(".") for s in owned_suffixes if s.strip()]
+    result = Discovery()
+    seen: dict[str, set[str]] = {}
+
+    for path in _iter_files(root):
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        result.files_scanned += 1
+        rel = path.relative_to(root).as_posix()
+        for match in URL_RE.finditer(text):
+            host = (urlsplit(match.group(0)).hostname or "").lower().rstrip(".")
+            if not host or host in ("localhost", "127.0.0.1", "0.0.0.0"):
+                continue
+            is_owned = any(host == s or host.endswith("." + s) for s in suffixes)
+            bucket = result.owned if is_owned else result.third_party
+            bucket.setdefault(host, []).append(rel)
+
+    for host in result.owned:
+        kind = _classify(host)
+        {"nonprod": result.nonprod, "prod": result.prod, "infra": result.infra}[kind].append(host)
+
+    result.nonprod.sort()
+    result.prod.sort()
+    result.infra.sort()
+    return result
+
+
+def scope_toml(discovery: Discovery, *, engagement: str = "discovered",
+               reference: str = "REVIEW-ME", allow_ports: tuple[int, ...] = (80, 443),
+               max_requests: int = 300) -> str:
+    """Draft scope: non-production candidates allowed, everything else denied."""
+    allow = discovery.nonprod or []
+    deny = [h for h in discovery.prod if h not in allow]
+    seeds = [f"https://{h}" for h in allow]
+
+    def arr(items: list[str]) -> str:
+        return "[" + ", ".join(json.dumps(i) for i in items) + "]"
+
+    lines = [
+        "# Generated by `janus discover`. REVIEW BEFORE USE.",
+        "# Discovery is evidence, not authorization: confirm every host below.",
+        "",
+        "[engagement]",
+        f"name          = {json.dumps(engagement)}",
+        'authorized_by = "CHANGE_ME"',
+        f"reference     = {json.dumps(reference)}",
+        'valid_from    = "2026-01-01"',
+        'valid_until   = "2026-12-31"',
+        "",
+        "[targets]",
+        f"allow = {arr(allow) if allow else '[]'}",
+        f"seeds = {arr(seeds) if seeds else '[]'}",
+        f"deny  = {arr(deny) if deny else '[]'}",
+        f"allow_ports = {list(allow_ports)}",
+        "forbidden_paths = []",
+        "",
+        "[limits]",
+        "allow_active_recon = false   # passive first; enable deliberately",
+        "allow_agent        = false",
+        "max_rps            = 1",
+        f"max_requests       = {max_requests}",
+        "",
+        "[code]",
+        'roots   = ["."]',
+        "exclude = []",
+    ]
+    if discovery.infra:
+        lines += ["", "# Owned but internal tooling — deliberately NOT in allow:",
+                  "# " + ", ".join(discovery.infra)]
+    return "\n".join(lines) + "\n"

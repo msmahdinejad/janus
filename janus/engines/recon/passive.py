@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import re
 import socket
+import subprocess
 from dataclasses import dataclass, field
 from urllib.parse import urljoin, urlsplit
 
@@ -318,24 +319,49 @@ def check_sensitive_paths(client: ScopeClient, base_url: str) -> list[Finding]:
     return findings
 
 
-def check_email_auth(domain: str, client: httpx.Client) -> list[Finding]:
-    findings: list[Finding] = []
+def _txt_records(domain: str, client: httpx.Client) -> tuple[list[str], bool]:
+    """Return (records, lookup_succeeded).
 
-    def _txt(name: str) -> list[str]:
+    The distinction matters: a failed lookup is not an absent record. On this
+    network both Cloudflare and Google DoH time out, which previously produced
+    "No SPF record" findings for domains that do publish SPF. Failure is now
+    reported as "not assessed", never as a finding.
+    """
+    providers = (
+        ("https://cloudflare-dns.com/dns-query", {"name": domain, "type": "TXT"}),
+        ("https://dns.google/resolve", {"name": domain, "type": "TXT"}),
+    )
+    for url, params in providers:
         try:
-            resp = client.get(
-                "https://cloudflare-dns.com/dns-query", params={"name": name, "type": "TXT"},
-                headers={"Accept": "application/dns-json"}, timeout=10,
-            )
+            resp = client.get(url, params=params,
+                              headers={"Accept": "application/dns-json"}, timeout=8)
             resp.raise_for_status()
-            return [a.get("data", "") for a in resp.json().get("Answer", [])]
-        except Exception:
-            return []
+            data = resp.json()
+        except Exception:  # noqa: BLE001
+            continue
+        return [str(a.get("data", "")) for a in data.get("Answer", []) or []], True
 
-    spf = [t for t in _txt(domain) if "spf1" in t.lower()]
-    dmarc = [t for t in _txt(f"_dmarc.{domain}") if "dmarc1" in t.lower()]
+    # Last resort: the system resolver. Works on Windows and POSIX and uses the
+    # same DNS the host already trusts (corporate resolvers included).
+    try:
+        proc = subprocess.run(["nslookup", "-type=TXT", domain], capture_output=True,
+                              text=True, timeout=10, encoding="utf-8", errors="replace")
+        if proc.returncode == 0:
+            return re.findall(r'"([^"]+)"', proc.stdout or ""), True
+    except Exception:  # noqa: BLE001
+        pass
+    return [], False
 
-    if not spf:
+
+def check_email_auth(domain: str, client: httpx.Client) -> tuple[list[Finding], bool]:
+    findings: list[Finding] = []
+    spf_raw, spf_ok = _txt_records(domain, client)
+    dmarc_raw, dmarc_ok = _txt_records(f"_dmarc.{domain}", client)
+
+    spf = [t for t in spf_raw if "spf1" in t.lower()]
+    dmarc = [t for t in dmarc_raw if "dmarc1" in t.lower()]
+
+    if spf_ok and not spf:
         findings.append(Finding(
             title=f"No SPF record for {domain}", severity="medium", category="configuration",
             engine="recon", tool="passive-recon", rule_id="EMAIL-NO-SPF",
@@ -344,7 +370,7 @@ def check_email_auth(domain: str, client: httpx.Client) -> list[Finding]:
             remediation="Publish an SPF record scoped to your actual sending infrastructure.",
             confidence="confirmed", sources=("passive-recon",),
         ))
-    if not dmarc:
+    if dmarc_ok and not dmarc:
         findings.append(Finding(
             title=f"No DMARC record for {domain}", severity="medium", category="configuration",
             engine="recon", tool="passive-recon", rule_id="EMAIL-NO-DMARC",
@@ -353,7 +379,7 @@ def check_email_auth(domain: str, client: httpx.Client) -> list[Finding]:
             remediation="Publish a DMARC record, starting at p=none to observe before enforcing.",
             confidence="confirmed", sources=("passive-recon",),
         ))
-    return findings
+    return findings, (spf_ok and dmarc_ok)
 
 
 # ---- JS bundle + sourcemap scanning ------------------------------------

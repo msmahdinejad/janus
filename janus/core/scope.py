@@ -117,6 +117,7 @@ class Scope:
     nonprod_markers: list[str]
     max_rps: float
     max_requests: int
+    max_seconds: float
     code_roots: list[Path]
     code_exclude: list[str]
     source_path: Path
@@ -425,6 +426,12 @@ def load_scope(path: str | Path) -> Scope:
         raise ScopeError(f"[limits].max_rps must be > 0 (got {max_rps})")
     if max_requests < 1:
         raise ScopeError(f"[limits].max_requests must be >= 1 (got {max_requests})")
+    try:
+        max_seconds = float(limits.get("max_seconds", 900))
+    except (TypeError, ValueError) as exc:
+        raise ScopeError("[limits].max_seconds must be a number") from exc
+    if max_seconds <= 0:
+        raise ScopeError(f"[limits].max_seconds must be > 0 (got {max_seconds})")
 
     scope_dir = path.parent
     code_roots = [
@@ -511,6 +518,7 @@ def load_scope(path: str | Path) -> Scope:
         )),
         max_rps=max_rps,
         max_requests=max_requests,
+        max_seconds=max_seconds,
         code_roots=code_roots,
         code_exclude=_str_list(code.get("exclude", []), "[code].exclude"),
         source_path=path,

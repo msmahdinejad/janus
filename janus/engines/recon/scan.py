@@ -45,17 +45,23 @@ def _primary_domains(scope: Scope) -> list[str]:
     IP addresses are skipped: `crt.sh` has nothing for them and an SPF/DMARC
     lookup against `127.0.0.1` is meaningless.
     """
-    domains = {pat[2:] if pat.startswith("*.") else pat for pat in scope.allow}
-    out = []
-    for d in sorted(domains):
-        if not d or "*" in d:
+    hosts = {pat[2:] if pat.startswith("*.") else pat for pat in scope.allow}
+    out: set[str] = set()
+    for host in hosts:
+        host = host.lower().strip(".")
+        if not host or "*" in host:
             continue
         try:
-            ipaddress.ip_address(d)
+            ipaddress.ip_address(host)
             continue
         except ValueError:
-            out.append(d)
-    return out
+            pass
+        # CT logs are indexed by registrable domain, not by subdomain. Asking
+        # crt.sh once per host (16 hosts = 8 minutes of timeouts) produced no
+        # extra data; collapse to the last two labels.
+        labels = host.split(".")
+        out.add(".".join(labels[-2:]) if len(labels) > 2 else host)
+    return sorted(out)
 
 
 def run(
@@ -133,7 +139,13 @@ def run(
 
         if not skip_passive:
             for domain in _primary_domains(scope):
-                findings.extend(passive.check_email_auth(domain, discovery_client))
+                email_findings, lookup_ok = passive.check_email_auth(domain, discovery_client)
+                findings.extend(email_findings)
+                if not lookup_ok:
+                    tool_results.append(ToolResult(
+                        "email-auth", "skipped",
+                        detail=f"DNS TXT lookup failed for {domain}; SPF/DMARC not assessed",
+                    ))
 
         # ---- active: nuclei, only with its own opt-in --------------------
         if mode in ("active", "agent") and not skip_passive:
