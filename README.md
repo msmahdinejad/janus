@@ -313,8 +313,11 @@ this machine could observe from here; a WAF silently dropping probes looks
 like "0 findings".
 
 For a coding agent that sets everything up and runs it, see
-[AGENTS.md](AGENTS.md) and [docs/AGENT-GUIDE.md](docs/AGENT-GUIDE.md). A short
-manual quickstart in Persian: [docs/QUICKSTART.fa.md](docs/QUICKSTART.fa.md).
+[AGENTS.md](AGENTS.md) and [docs/AGENT-GUIDE.md](docs/AGENT-GUIDE.md) — the
+complete, provider-agnostic setup guide: prerequisites, tools, model wiring,
+the three scan levels, write-path checks, dashboard and a verification matrix.
+A short manual quickstart in Persian: [docs/QUICKSTART.fa.md](docs/QUICKSTART.fa.md).
+Agent briefs for reviewing or publishing this repo: [prompts/](prompts/).
 
 ## Development
 
