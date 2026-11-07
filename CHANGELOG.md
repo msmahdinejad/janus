@@ -63,6 +63,8 @@ external agent backend behind an egress allowlist.
   before the directory).
 - Redaction now covers every free-text finding field, not only the snippet.
 - `--fail-on` evaluates the current run only, not old rows in the register.
+- The built wheel omitted the dashboard's static files, so a wheel install had no
+  working dashboard.
 
 ### Security
 

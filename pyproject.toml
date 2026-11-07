@@ -33,3 +33,6 @@ norecursedirs = ["work", "demo", "engagements", ".venv", "node_modules", ".cache
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.package-data]
+"janus.dashboard" = ["static/*", "static/*/*", "static/*/*/*"]
