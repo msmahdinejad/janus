@@ -622,6 +622,85 @@ def cmd_dashboard(args: argparse.Namespace) -> int:
 
 
 
+
+def cmd_review_code(args: argparse.Namespace) -> int:
+    """Hand a structured review protocol to a coding agent and import findings."""
+    from .core import coverage as coverage_mod
+    from .lenses import select as select_lenses
+    from .review import run as review_run, tool_result
+
+    repo = Path(args.repo)
+    if not repo.is_dir():
+        print(f"not a directory: {repo}", file=sys.stderr)
+        return 2
+    try:
+        lenses = select_lenses(args.lens)
+    except ValueError as exc:
+        print(f"lens error: {exc}", file=sys.stderr)
+        return 2
+
+    run_id = f"{uuid.uuid4().hex[:12]}"
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{run_id}.review-manifest.json").write_text(
+        json.dumps({"run_id": run_id, "command": "review code", "repo": str(repo),
+                    "agent": args.agent, "lenses": [l.id for l in lenses]}, indent=2),
+        encoding="utf-8")
+
+    print(f"reviewing {repo} with {args.agent} (lenses: {', '.join(l.id for l in lenses)})")
+    result = review_run(repo.resolve(), agent=args.agent, lenses=lenses,
+                        timeout=args.timeout, extra=args.instruction or "")
+    findings = result.findings
+    if result.raw:
+        (out_dir / f"{run_id}.review-response.txt").write_text(result.raw, encoding="utf-8")
+    print(f"{len(findings)} findings — {result.detail}")
+    if not findings and result.raw and "[" not in result.raw:
+        print("  (the agent replied without a JSON array; raw response saved next to the run)",
+              file=sys.stderr)
+
+    register = Register(out_dir / "register.json")
+    with register.transaction() as reg:
+        stats = reg.merge(findings)
+    print(f"register: +{stats['new']} new, {stats['updated']} updated")
+
+    cov = coverage_mod.build(scope_name=f"review:{repo.name}", mode="review",
+                             findings=findings, tool_results=[tool_result(result)],
+                             lenses=lenses)
+    (out_dir / "coverage.json").write_text(json.dumps(cov, indent=2), encoding="utf-8")
+    _record_scan(out_dir, run_id, _ReviewScope(repo), "review code", findings,
+                 [tool_result(result)], mode="review",
+                 lenses=[l.id for l in lenses], coverage=cov)
+    _write_reports_for(out_dir, run_id, cov)
+    return _exit_code_for([f.to_dict() for f in findings], args.fail_on or "high")
+
+
+class _ReviewScope:
+    """Minimal manifest provider so history/report writers work for reviews."""
+
+    def __init__(self, repo: Path) -> None:
+        self.repo = repo
+
+    def manifest(self, run_id: str) -> dict:
+        return {"engagement": f"review:{self.repo.name}", "authorized_by": "operator",
+                "authorization_reference": f"review-{run_id}", "valid_from": "", "valid_until": "",
+                "run_id": run_id}
+
+
+def _write_reports_for(out_dir: Path, run_id: str, coverage_doc: dict) -> None:
+    from .core import report as report_mod
+    from .core.store import Register
+
+    register = Register(out_dir / "register.json")
+    findings = register.all()
+    manifest = {"engagement": out_dir.name, "authorization_reference": f"review-{run_id}"}
+    (out_dir / "findings.json").write_text(
+        json.dumps(report_mod.to_json(manifest, findings), indent=2, ensure_ascii=False),
+        encoding="utf-8")
+    (out_dir / "findings.sarif").write_text(
+        json.dumps(report_mod.to_sarif(findings), indent=2), encoding="utf-8")
+    (out_dir / "report.md").write_text(report_mod.to_markdown(manifest, findings), encoding="utf-8")
+    print(f"wrote {out_dir / 'report.md'}")
+
 def cmd_discover(args: argparse.Namespace) -> int:
     """Derive candidate targets from a repository's own configuration."""
     from .discovery import discover, scope_toml
@@ -808,6 +887,18 @@ def build_parser() -> argparse.ArgumentParser:
     db.add_argument("--token", default=None,
                     help="bearer token required on /api/* (or set JANUS_DASHBOARD_TOKEN)")
     db.set_defaults(func=cmd_dashboard)
+
+    rv = sub.add_parser("review", help="agent-driven read-only source review")
+    rv_sub = rv.add_subparsers(dest="target", required=True)
+    rvc = rv_sub.add_parser("code", help="review a repository with a coding agent")
+    rvc.add_argument("--repo", required=True)
+    rvc.add_argument("--agent", choices=["codex", "claude"], default="codex")
+    rvc.add_argument("--lens", default="authz,business,injection")
+    rvc.add_argument("--instruction", default=None)
+    rvc.add_argument("--out", default="out/review")
+    rvc.add_argument("--timeout", type=int, default=1800)
+    rvc.add_argument("--fail-on", choices=[*SEVERITY_ORDER, "none"], default="high")
+    rvc.set_defaults(func=cmd_review_code)
 
     dv = sub.add_parser("discover", help="derive candidate targets from a repo's config/URLs")
     dv.add_argument("--repo", required=True)

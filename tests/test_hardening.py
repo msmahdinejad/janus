@@ -696,3 +696,28 @@ def test_wall_clock_budget_stops_a_run(tmp_path):
     _time.sleep(0.01)  # the clock starts when the client is built
     with pytest.raises(BudgetExceeded, match="wall-clock"):
         client.get("https://app.test/")
+
+def test_review_extracts_json_from_agent_reply(tmp_path):
+    from janus.review import _extract_json, _to_findings
+
+    reply = """Sure, here is what I found.
+
+```json
+[{"title": "Callback does not bind the amount", "severity": "critical",
+  "path": "payment/views.py", "line": 39,
+  "evidence": "amount = request.data.get('amount')", "impact": "free credit",
+  "remediation": "read the amount from the order", "confidence": "likely"}]
+```
+"""
+    rows = _extract_json(reply)
+    assert len(rows) == 1
+    findings = _to_findings(rows, "codex", tmp_path)
+    assert findings[0].severity == "critical"
+    assert findings[0].tool == "review:codex"
+    assert findings[0].fingerprint
+
+
+def test_review_ignores_non_json_replies():
+    from janus.review import _extract_json
+    assert _extract_json("I could not review this repository.") == []
+    assert _extract_json("") == []
