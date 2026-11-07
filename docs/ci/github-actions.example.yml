@@ -1,0 +1,63 @@
+# Example CI wiring for the `code` engine. Copy this into your own repo
+# (adjusting `scope.toml`'s [code].roots to point at that repo's checkout)
+# rather than running it in Janus's own repo — Janus scanning itself is a
+# fine smoke test but isn't what most users want from this file.
+#
+# The `recon` engine is NOT wired into CI here on purpose: active/agent
+# recon against a real target from a CI runner needs the same written
+# authorization as running it from a laptop, and a CI job is an easy way
+# for that authorization step to get silently skipped. Run `scan recon`
+# from an operator's machine (or a deliberately separate, access-controlled
+# pipeline) instead.
+name: janus-code-scan
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install janus
+        run: pip install .
+
+      - name: Install optional scanners (pinned, best-effort)
+        # Pinned downloads instead of `curl | sh`: the pipeline should not run
+        # an unpinned remote script, for the same reason Janus flags that
+        # pattern in your code.
+        run: |
+          pip install semgrep || true
+          curl -sSL -o /tmp/gl.tgz https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            && tar -xzf /tmp/gl.tgz -C /usr/local/bin gitleaks || true
+          curl -sSL -o /tmp/trivy.tgz https://github.com/aquasecurity/trivy/releases/download/v0.76.2/trivy_0.76.2_Linux-64bit.tar.gz \
+            && tar -xzf /tmp/trivy.tgz -C /usr/local/bin trivy || true
+
+      - name: Scan
+        run: |
+          janus scan code --scope scope.toml --out out --fail-on high
+        # Exit code 1 = findings at/above --fail-on (fails the job on purpose).
+        # Exit code 2 = scope.toml itself is invalid/expired — fix the scope
+        # file, this is a setup problem, not a security finding.
+
+      - name: Upload SARIF to code scanning
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: out/findings.sarif
+
+      - name: Upload full report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: janus-report
+          path: out/

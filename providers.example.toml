@@ -1,0 +1,23 @@
+# Copy to providers.toml (gitignored) only if you need to override a
+# built-in provider default or add a new one - most setups don't need this
+# file at all. See janus/core/providers.py for the full defaults, and
+# USAGE.md "The --mode agent layer" for how it's loaded
+# (`--providers-file providers.toml`).
+
+# Example: point the "deepseek" name at a different model without
+# retyping base_url/api_key_env.
+# [providers.deepseek]
+# model = "deepseek-flash"
+# api_format = "chat_completions"  # use "responses" only when the model requires it
+
+# Example: route everything through OpenRouter with one key, picking the
+# exact model it should use per call.
+# [providers.openrouter]
+# model = "z-ai/glm-5.3"
+
+# Example: add a brand new named provider - an internal LiteLLM/vLLM
+# gateway, another OpenAI-compatible endpoint, whatever you run.
+# [providers.internal-gateway]
+# base_url    = "https://llm-gateway.internal.example.com/v1"
+# model       = "whatever-your-gateway-calls-it"
+# api_key_env = "INTERNAL_GATEWAY_KEY"

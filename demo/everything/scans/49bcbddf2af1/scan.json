@@ -1,0 +1,116 @@
+{
+  "run_id": "49bcbddf2af1",
+  "finished_at": "2026-11-07T12:21:46.426362+00:00",
+  "command": "scan all",
+  "mode": "agent",
+  "engagement": "janus-full-demo",
+  "authorization_reference": "demo-full-2026-11-06",
+  "scope_sha256_16": "1ba84b9a7f1ab1cb",
+  "lenses": [
+    "authz",
+    "authn",
+    "injection",
+    "secrets",
+    "business",
+    "files",
+    "client",
+    "write",
+    "infra"
+  ],
+  "total": 12,
+  "by_severity": {
+    "critical": 3,
+    "low": 5,
+    "medium": 2,
+    "high": 2
+  },
+  "by_engine": {
+    "code": 2,
+    "recon": 10
+  },
+  "by_tool": {
+    "builtin": 2,
+    "passive-recon": 9,
+    "nuclei": 1
+  },
+  "tools": [
+    {
+      "id": "gitleaks",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "trivy",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "semgrep",
+      "status": "failed",
+      "detail": "exit 2: no output file",
+      "findings": 0
+    },
+    {
+      "id": "gitleaks",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "trivy",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "semgrep",
+      "status": "failed",
+      "detail": "exit 2: no output file",
+      "findings": 0
+    },
+    {
+      "id": "nuclei",
+      "status": "ok",
+      "detail": "1 findings",
+      "findings": 1
+    },
+    {
+      "id": "agent:native:openrouter",
+      "status": "failed",
+      "detail": "LLM HTTP 403: { \"success\": false, \"error\": \"Access denied by security policy.\" }",
+      "findings": 0
+    }
+  ],
+  "engines": [
+    {
+      "id": "code",
+      "status": "ran",
+      "findings": 2,
+      "detail": "34 files scanned"
+    },
+    {
+      "id": "recon",
+      "status": "ran",
+      "findings": 10,
+      "detail": "1 hosts tested"
+    }
+  ],
+  "gaps": [
+    "semgrep failed - exit 2: no output file",
+    "semgrep failed - exit 2: no output file",
+    "agent:native:openrouter failed - LLM HTTP 403: { \"success\": false, \"error\": \"Access denied by security policy.\" }",
+    "8 finding(s) carry no OWASP mapping (tool-native rules)"
+  ],
+  "quality": "failed",
+  "status": "complete",
+  "files_scanned": 34,
+  "recon": {
+    "hosts_discovered": 1,
+    "hosts_tested": 1,
+    "budget_used": 28,
+    "budget_max": 120,
+    "denied": 0
+  }
+}

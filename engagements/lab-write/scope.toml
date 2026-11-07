@@ -1,0 +1,39 @@
+# Lab engagement that exercises the opt-in write path.
+# The host is 127.0.0.1, so its non-production marker is the loopback address
+# itself; on a real engagement this would be "staging"/"test"/"qa".
+
+[engagement]
+name          = "lab-write-path"
+authorized_by = "local operator (own machine)"
+reference     = "lab-write-2026-11-06"
+valid_from    = "2026-11-01"
+valid_until   = "2030-12-31"
+enabled       = true
+
+[targets]
+allow = ["127.0.0.1"]
+seeds = ["http://127.0.0.1:8099"]
+deny  = []
+allow_ports = [8099]
+forbidden_paths = []
+
+[limits]
+allow_active_recon     = true
+allow_agent            = true
+allow_state_changing   = true
+mutating_methods       = ["POST"]
+require_nonprod_marker = true
+nonprod_markers        = ["127.0.0.1", "staging", "test", "demo"]
+allow_private_targets  = true
+max_rps                = 2
+max_requests           = 20
+
+[code]
+roots   = []
+exclude = []
+
+[[write.targets]]
+url = "http://127.0.0.1:8099/api/orders"
+method = "POST"
+body = { product_id = 1, qty = 1 }
+expect_auth = true

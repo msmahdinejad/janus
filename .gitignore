@@ -1,0 +1,28 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Runtime data — never commit real engagement data or findings
+runs/
+out/
+.cache/
+*.db
+findings.local.json
+scope.local.toml
+docker-build*.log
+.env
+providers.toml
+providers.local.toml
+
+# Anything explicitly marked local/real as opposed to the example/demo fixtures
+*.real.*
+secrets.local.*
+
+.tools/
+engagements/*/out*/
+engagements/*/*.log

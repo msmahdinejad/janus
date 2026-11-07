@@ -1,0 +1,30 @@
+# Demo / CI scope. Targets point at IANA's reserved documentation domain
+# (example.com) purely so the file is a *valid* scope — the demo flow does
+# not actually send traffic to it (see examples/demo-fixture/README.md).
+# The code engine's roots point at the synthetic vulnerable_app/ fixture,
+# which is real, local, and safe to actually scan.
+
+[engagement]
+name          = "janus-demo"
+authorized_by = "demo"
+reference     = "demo-fixture — not a real engagement"
+valid_from    = "2026-01-01"
+valid_until   = "2030-01-01"
+enabled       = true
+
+[targets]
+allow = ["example.com", "*.example.com"]
+deny  = []
+allow_ports = [80, 443]
+forbidden_paths = []
+
+[limits]
+allow_active_recon = false
+allow_agent = false
+require_nonprod_marker = false
+max_rps = 1
+max_requests = 100
+
+[code]
+roots   = ["vulnerable_app"]
+exclude = []

@@ -1,0 +1,186 @@
+{
+  "engagement": "janus-full-demo",
+  "mode": "agent",
+  "generated_at": "2026-11-07T12:21:46+00:00",
+  "code": {
+    "files_scanned": 34
+  },
+  "recon": {
+    "hosts_discovered": 1,
+    "hosts_tested": 1,
+    "budget_used": 28,
+    "budget_max": 120,
+    "denied": 0
+  },
+  "engines": [
+    {
+      "id": "code",
+      "status": "ran",
+      "findings": 2,
+      "detail": "34 files scanned"
+    },
+    {
+      "id": "recon",
+      "status": "ran",
+      "findings": 10,
+      "detail": "1 hosts tested"
+    }
+  ],
+  "tools": [
+    {
+      "id": "gitleaks",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "trivy",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "semgrep",
+      "status": "failed",
+      "detail": "exit 2: no output file",
+      "findings": 0
+    },
+    {
+      "id": "gitleaks",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "trivy",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "semgrep",
+      "status": "failed",
+      "detail": "exit 2: no output file",
+      "findings": 0
+    },
+    {
+      "id": "nuclei",
+      "status": "ok",
+      "detail": "1 findings",
+      "findings": 1
+    },
+    {
+      "id": "agent:native:openrouter",
+      "status": "failed",
+      "detail": "LLM HTTP 403: { \"success\": false, \"error\": \"Access denied by security policy.\" }",
+      "findings": 0
+    }
+  ],
+  "lenses": [
+    {
+      "id": "authz",
+      "title": "Broken access control",
+      "status": "ran",
+      "owasp": [
+        "A01:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "authn",
+      "title": "Authentication and session",
+      "status": "ran",
+      "owasp": [
+        "A07:2021"
+      ],
+      "findings": 3
+    },
+    {
+      "id": "injection",
+      "title": "Injection and server-side execution",
+      "status": "ran",
+      "owasp": [
+        "A03:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "secrets",
+      "title": "Secrets and data exposure",
+      "status": "ran",
+      "owasp": [
+        "A02:2021",
+        "A05:2021"
+      ],
+      "findings": 1
+    },
+    {
+      "id": "business",
+      "title": "Business logic and payments",
+      "status": "ran",
+      "owasp": [
+        "A04:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "files",
+      "title": "File handling and uploads",
+      "status": "ran",
+      "owasp": [
+        "A03:2021",
+        "A01:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "client",
+      "title": "Client-side and browser trust",
+      "status": "ran",
+      "owasp": [
+        "A03:2021",
+        "A05:2021"
+      ],
+      "findings": 1
+    },
+    {
+      "id": "write",
+      "title": "Write-path authorization and integrity",
+      "status": "ran",
+      "owasp": [
+        "A01:2021",
+        "A04:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "infra",
+      "title": "Edge, platform and configuration",
+      "status": "ran",
+      "owasp": [
+        "A05:2021",
+        "A06:2021"
+      ],
+      "findings": 1
+    }
+  ],
+  "owasp": {
+    "A05:2021": {
+      "name": "Security Misconfiguration",
+      "total": 1,
+      "confirmed": 1
+    },
+    "A07:2021": {
+      "name": "Identification and Authentication Failures",
+      "total": 3,
+      "confirmed": 3
+    }
+  },
+  "gaps": [
+    "semgrep failed - exit 2: no output file",
+    "semgrep failed - exit 2: no output file",
+    "agent:native:openrouter failed - LLM HTTP 403: { \"success\": false, \"error\": \"Access denied by security policy.\" }",
+    "8 finding(s) carry no OWASP mapping (tool-native rules)"
+  ],
+  "quality": "failed"
+}

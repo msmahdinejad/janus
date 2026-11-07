@@ -1,0 +1,31 @@
+# Full-capability demo: code engine + passive recon + active (nuclei) + agent,
+# all in one run. The code roots are the project's own lab target plus Janus
+# itself, so the source engine has real files to chew on without leaving the
+# machine.
+
+[engagement]
+name          = "janus-full-demo"
+authorized_by = "local operator (own machine)"
+reference     = "demo-full-2026-11-06"
+valid_from    = "2026-11-01"
+valid_until   = "2030-12-31"
+enabled       = true
+
+[targets]
+allow = ["127.0.0.1"]
+seeds = ["http://127.0.0.1:8099"]
+deny  = []
+allow_ports = [8099]
+forbidden_paths = ["^/admin/(delete|purge|drop)"]
+
+[limits]
+allow_active_recon     = true
+allow_agent            = true
+allow_private_targets  = true
+require_nonprod_marker = false
+max_rps                = 2
+max_requests           = 120
+
+[code]
+roots = ["../../examples/lab_app", "../../janus"]
+exclude = ["**/__pycache__/**", "**/static/**"]

@@ -1,0 +1,158 @@
+/* ---------------------------------------------------------------------------
+   Janus design tokens.
+   Colour story: the chrome is quiet ink-on-paper neutrals; colour is reserved
+   for *meaning* — severity (red→grey) and the two faces of Janus
+   (teal = inward/source code, violet = outward/live surface).
+   Dark mode: applied by prefers-color-scheme unless the user forced light,
+   or forced via [data-theme="dark"] (the in-app toggle).
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #f2f4f7;
+  --surface-3: #e9ecf1;
+  --sidebar: #fbfbfc;
+  --border: #e3e6ec;
+  --border-strong: #cdd2dc;
+  --overlay: rgba(16, 24, 40, .38);
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .06);
+  --shadow-md: 0 4px 14px rgba(16, 24, 40, .10), 0 1px 3px rgba(16, 24, 40, .06);
+  --shadow-lg: 0 18px 48px rgba(16, 24, 40, .18), 0 2px 8px rgba(16, 24, 40, .08);
+
+  /* text */
+  --text: #101828;
+  --text-2: #475467;
+  --text-3: #667085;
+  --text-inv: #ffffff;
+
+  /* interaction */
+  --accent: #3b5bdb;
+  --accent-soft: #eaeefc;
+  --accent-text: #2f49b8;
+  --focus: #3b5bdb;
+  --primary: #101828;          /* primary buttons are ink, not a brand colour */
+  --primary-text: #ffffff;
+  --hover: rgba(16, 24, 40, .045);
+  --pressed: rgba(16, 24, 40, .08);
+
+  /* the two faces */
+  --face-code: #0d9488;        /* inward  — source */
+  --face-recon: #7c3aed;       /* outward — surface */
+  --face-code-soft: #e3f6f3;
+  --face-recon-soft: #f0e9fd;
+
+  /* severity: solid (charts, dots), fg (text on tinted bg), bg (tinted) */
+  --sev-critical: #d92d20;  --sev-critical-fg: #b42318;  --sev-critical-bg: #fdecea;
+  --sev-high:     #ea6a12;  --sev-high-fg:     #b54708;  --sev-high-bg:     #fef0e3;
+  --sev-medium:   #d9a406;  --sev-medium-fg:   #8a5b00;  --sev-medium-bg:   #fdf5d8;
+  --sev-low:      #3b82f6;  --sev-low-fg:      #1d5fd0;  --sev-low-bg:      #e8f0fe;
+  --sev-info:     #98a2b3;  --sev-info-fg:     #475467;  --sev-info-bg:     #eef0f4;
+
+  /* triage status */
+  --st-open: #d92d20;           --st-open-bg: #fdecea;
+  --st-needs-review: #d9a406;   --st-needs-review-bg: #fdf5d8;   --st-needs-review-fg: #8a5b00;
+  --st-fixed: #12935a;          --st-fixed-bg: #e2f6ec;           --st-fixed-fg: #0b6b40;
+  --st-ruled-out: #667085;      --st-ruled-out-bg: #eef0f4;
+  --st-accepted-risk: #7c3aed;  --st-accepted-risk-bg: #f0e9fd;   --st-accepted-risk-fg: #5b21b6;
+  --st-open-fg: #b42318;
+
+  --code-bg: #f6f7f9;
+
+  /* type */
+  --font: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "Cascadia Code", "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+
+  /* shape */
+  --r-xs: 4px; --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
+  --sidebar-w: 232px;
+  --drawer-w: 560px;
+  --row-h: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0a0c11;
+    --surface: #11141b;
+    --surface-2: #171b24;
+    --surface-3: #1e232e;
+    --sidebar: #0d1016;
+    --border: #232936;
+    --border-strong: #333b4d;
+    --overlay: rgba(0, 0, 0, .6);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+    --shadow-md: 0 6px 18px rgba(0, 0, 0, .45);
+    --shadow-lg: 0 20px 56px rgba(0, 0, 0, .6);
+    --text: #e9ebf1;
+    --text-2: #a4abbb;
+    --text-3: #7e8699;
+    --text-inv: #0a0c11;
+    --accent: #7b93ff;
+    --accent-soft: #1b2347;
+    --accent-text: #a5b4ff;
+    --focus: #8ea2ff;
+    --primary: #eceef4;
+    --primary-text: #0a0c11;
+    --hover: rgba(255, 255, 255, .05);
+    --pressed: rgba(255, 255, 255, .09);
+    --face-code: #2dd4bf;
+    --face-recon: #a78bfa;
+    --face-code-soft: #0f2a29;
+    --face-recon-soft: #231a3f;
+    --sev-critical: #f04438; --sev-critical-fg: #ff8a80; --sev-critical-bg: #3a1513;
+    --sev-high:     #f97316; --sev-high-fg:     #ffab6b; --sev-high-bg:     #3a2010;
+    --sev-medium:   #eab308; --sev-medium-fg:   #f4cf55; --sev-medium-bg:   #352b0b;
+    --sev-low:      #5a9bff; --sev-low-fg:      #8bb8ff; --sev-low-bg:      #14264a;
+    --sev-info:     #7b8498; --sev-info-fg:     #aab1c0; --sev-info-bg:     #1e232e;
+    --st-open: #f04438;          --st-open-bg: #3a1513;           --st-open-fg: #ff8a80;
+    --st-needs-review: #eab308;  --st-needs-review-bg: #352b0b;   --st-needs-review-fg: #f4cf55;
+    --st-fixed: #34d399;         --st-fixed-bg: #0e2e22;          --st-fixed-fg: #6ee7b7;
+    --st-ruled-out: #8b93a5;     --st-ruled-out-bg: #1e232e;
+    --st-accepted-risk: #a78bfa; --st-accepted-risk-bg: #231a3f;  --st-accepted-risk-fg: #c4b5fd;
+    --code-bg: #0c0f15;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0a0c11;
+  --surface: #11141b;
+  --surface-2: #171b24;
+  --surface-3: #1e232e;
+  --sidebar: #0d1016;
+  --border: #232936;
+  --border-strong: #333b4d;
+  --overlay: rgba(0, 0, 0, .6);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .4);
+  --shadow-md: 0 6px 18px rgba(0, 0, 0, .45);
+  --shadow-lg: 0 20px 56px rgba(0, 0, 0, .6);
+  --text: #e9ebf1;
+  --text-2: #a4abbb;
+  --text-3: #7e8699;
+  --text-inv: #0a0c11;
+  --accent: #7b93ff;
+  --accent-soft: #1b2347;
+  --accent-text: #a5b4ff;
+  --focus: #8ea2ff;
+  --primary: #eceef4;
+  --primary-text: #0a0c11;
+  --hover: rgba(255, 255, 255, .05);
+  --pressed: rgba(255, 255, 255, .09);
+  --face-code: #2dd4bf;
+  --face-recon: #a78bfa;
+  --face-code-soft: #0f2a29;
+  --face-recon-soft: #231a3f;
+  --sev-critical: #f04438; --sev-critical-fg: #ff8a80; --sev-critical-bg: #3a1513;
+  --sev-high:     #f97316; --sev-high-fg:     #ffab6b; --sev-high-bg:     #3a2010;
+  --sev-medium:   #eab308; --sev-medium-fg:   #f4cf55; --sev-medium-bg:   #352b0b;
+  --sev-low:      #5a9bff; --sev-low-fg:      #8bb8ff; --sev-low-bg:      #14264a;
+  --sev-info:     #7b8498; --sev-info-fg:     #aab1c0; --sev-info-bg:     #1e232e;
+  --st-open: #f04438;          --st-open-bg: #3a1513;           --st-open-fg: #ff8a80;
+  --st-needs-review: #eab308;  --st-needs-review-bg: #352b0b;   --st-needs-review-fg: #f4cf55;
+  --st-fixed: #34d399;         --st-fixed-bg: #0e2e22;          --st-fixed-fg: #6ee7b7;
+  --st-ruled-out: #8b93a5;     --st-ruled-out-bg: #1e232e;
+  --st-accepted-risk: #a78bfa; --st-accepted-risk-bg: #231a3f;  --st-accepted-risk-fg: #c4b5fd;
+  --code-bg: #0c0f15;
+}

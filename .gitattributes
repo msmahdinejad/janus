@@ -1,0 +1,9 @@
+# Developed on Windows; keep the repository LF so diffs and SARIF/JSON
+# fixtures are identical on every platform.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.woff2 binary

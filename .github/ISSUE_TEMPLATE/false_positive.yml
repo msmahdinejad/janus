@@ -1,0 +1,29 @@
+name: False positive
+description: A built-in rule or adapter flagged code that is not a problem
+labels: [false-positive]
+body:
+  - type: markdown
+    attributes:
+      value: Use obviously fake values; never paste real secrets or proprietary code. The smallest snippet that triggers the rule is the most useful thing you can give us.
+  - type: input
+    id: rule
+    attributes:
+      label: Rule ID and tool
+      placeholder: "e.g. CODE-EVAL (builtin) or semgrep:python.lang.security..."
+    validations: {required: true}
+  - type: textarea
+    id: snippet
+    attributes:
+      label: Minimal snippet that triggers it
+      render: text
+    validations: {required: true}
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it is not a real problem here
+      description: What guarantees the precondition is not reachable?
+    validations: {required: true}
+  - type: input
+    id: version
+    attributes:
+      label: Janus version / commit

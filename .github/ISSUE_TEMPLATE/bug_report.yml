@@ -1,0 +1,43 @@
+name: Bug report
+description: Janus crashed, produced wrong output, or a tool failure looked like a clean scan
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Do not paste real secrets, real target hostnames, or engagement output you are not allowed to share.
+        Janus must only be pointed at systems you are authorized to test. For vulnerabilities in Janus itself, use the private reporting flow in SECURITY.md instead of this form.
+  - type: input
+    id: version
+    attributes:
+      label: Janus version / commit
+      description: Output of `pip show janus-secops` or `git rev-parse --short HEAD`
+    validations: {required: true}
+  - type: input
+    id: platform
+    attributes:
+      label: OS and Python version
+      placeholder: "Windows 11, Python 3.12"
+    validations: {required: true}
+  - type: textarea
+    id: command
+    attributes:
+      label: Command you ran
+      render: bash
+    validations: {required: true}
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations: {required: true}
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened
+      description: Include the exit code and the relevant part of the output or `coverage.json`.
+    validations: {required: true}
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`janus doctor` output"
+      render: text

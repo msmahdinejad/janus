@@ -1,0 +1,198 @@
+[
+  {
+    "url": "http://127.0.0.1:8099",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/janus-probe-does-not-exist-9f3c",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/.git/config",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/.env",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/robots.txt",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/.well-known/security.txt",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/server-status",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/actuator/health",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/swagger",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/swagger.json",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/api-docs",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/graphql",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/admin",
+    "method": "GET",
+    "status": 401,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/admin/",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/debug",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/metrics",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/console",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/phpmyadmin/",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/phpMyAdmin/",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/.aws/credentials",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/static/app.js",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/static/app.js.map",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/v1/sys/seal-status",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/api/health",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/api/session/properties",
+    "method": "GET",
+    "status": 404,
+    "allowed": true,
+    "reasons": []
+  },
+  {
+    "url": "http://127.0.0.1:8099/",
+    "method": "GET",
+    "status": 200,
+    "allowed": true,
+    "reasons": []
+  }
+]

@@ -1,0 +1,26 @@
+[engagement]
+name          = "janus-strix-lab"
+authorized_by = "local operator (own machine)"
+reference     = "strix-lab-2026-11-06"
+valid_from    = "2026-11-01"
+valid_until   = "2030-12-31"
+enabled       = true
+
+[targets]
+allow = ["host.docker.internal"]
+seeds = ["http://host.docker.internal:8099"]
+deny  = []
+allow_ports = [8099]
+forbidden_paths = ["^/admin/(delete|purge|drop)"]
+
+[limits]
+allow_active_recon     = true
+allow_agent            = true
+allow_private_targets  = true
+require_nonprod_marker = false
+max_rps                = 2
+max_requests           = 60
+
+[code]
+roots   = []
+exclude = []

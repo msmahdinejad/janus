@@ -1,0 +1,25 @@
+name: Feature request
+description: Propose a new rule, adapter, lens, report format or dashboard feature
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+    validations: {required: true}
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behaviour
+      description: Commands, scope keys or UI you would expect.
+    validations: {required: true}
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Does it send network traffic or change what scope allows?
+      options: ["No", "Yes - reads only (GET/HEAD/OPTIONS)", "Yes - needs a new scope opt-in"]
+    validations: {required: true}
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

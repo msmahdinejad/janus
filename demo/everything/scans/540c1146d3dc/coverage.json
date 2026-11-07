@@ -1,0 +1,174 @@
+{
+  "engagement": "janus-full-demo",
+  "mode": "passive",
+  "generated_at": "2026-11-07T12:03:10+00:00",
+  "code": {
+    "files_scanned": 34
+  },
+  "recon": {
+    "hosts_discovered": 1,
+    "hosts_tested": 1,
+    "budget_used": 28,
+    "budget_max": 120,
+    "denied": 0
+  },
+  "engines": [
+    {
+      "id": "code",
+      "status": "ran",
+      "findings": 2,
+      "detail": "34 files scanned"
+    },
+    {
+      "id": "recon",
+      "status": "ran",
+      "findings": 9,
+      "detail": "1 hosts tested"
+    }
+  ],
+  "tools": [
+    {
+      "id": "gitleaks",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "trivy",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "semgrep",
+      "status": "failed",
+      "detail": "exit 2: no output file",
+      "findings": 0
+    },
+    {
+      "id": "gitleaks",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "trivy",
+      "status": "ok",
+      "detail": "0 findings",
+      "findings": 0
+    },
+    {
+      "id": "semgrep",
+      "status": "failed",
+      "detail": "exit 2: no output file",
+      "findings": 0
+    }
+  ],
+  "lenses": [
+    {
+      "id": "authz",
+      "title": "Broken access control",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A01:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "authn",
+      "title": "Authentication and session",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A07:2021"
+      ],
+      "findings": 3
+    },
+    {
+      "id": "injection",
+      "title": "Injection and server-side execution",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A03:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "secrets",
+      "title": "Secrets and data exposure",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A02:2021",
+        "A05:2021"
+      ],
+      "findings": 1
+    },
+    {
+      "id": "business",
+      "title": "Business logic and payments",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A04:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "files",
+      "title": "File handling and uploads",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A03:2021",
+        "A01:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "client",
+      "title": "Client-side and browser trust",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A03:2021",
+        "A05:2021"
+      ],
+      "findings": 1
+    },
+    {
+      "id": "write",
+      "title": "Write-path authorization and integrity",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A01:2021",
+        "A04:2021"
+      ],
+      "findings": 0
+    },
+    {
+      "id": "infra",
+      "title": "Edge, platform and configuration",
+      "status": "not-run (agent mode off)",
+      "owasp": [
+        "A05:2021",
+        "A06:2021"
+      ],
+      "findings": 1
+    }
+  ],
+  "owasp": {
+    "A05:2021": {
+      "name": "Security Misconfiguration",
+      "total": 1,
+      "confirmed": 1
+    },
+    "A07:2021": {
+      "name": "Identification and Authentication Failures",
+      "total": 3,
+      "confirmed": 3
+    }
+  },
+  "gaps": [
+    "semgrep failed - exit 2: no output file",
+    "semgrep failed - exit 2: no output file",
+    "AI agent lenses were not run (`--mode agent` is off or the scope forbids it)",
+    "7 finding(s) carry no OWASP mapping (tool-native rules)"
+  ],
+  "quality": "failed"
+}

@@ -1,0 +1,29 @@
+# Smoke test against IANA's reserved documentation domain.
+# example.com is set aside by RFC 2606 for exactly this purpose: it is safe
+# to fetch, has no users, and belongs to nobody in particular. The point of
+# this engagement is to prove the recon engine's request path end to end
+# against the real internet, not to find bugs in example.com.
+
+[engagement]
+name          = "public-smoke-example-com"
+authorized_by = "local operator (RFC 2606 reserved domain)"
+reference     = "smoke-2026-11-06"
+valid_from    = "2026-11-01"
+valid_until   = "2030-12-31"
+enabled       = true
+
+[targets]
+allow = ["example.com", "www.example.com"]
+deny  = []
+allow_ports = [80, 443]
+forbidden_paths = ["^/admin/(delete|purge|drop)"]
+
+[limits]
+allow_active_recon = false
+allow_agent        = false
+max_rps            = 2
+max_requests       = 60
+
+[code]
+roots   = []
+exclude = []

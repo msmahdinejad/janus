@@ -1,0 +1,23 @@
+
+# Write-path testing is off by default. Uncomment the three keys together or
+# the scope file will be rejected: state-changing requests are staging-only.
+# allow_state_changing   = true
+# mutating_methods       = ["POST"]
+# require_nonprod_marker = true
+
+# --- Write-path checks (opt-in, staging only) -----------------------------
+# Uncomment the block in [limits] above (allow_state_changing + nonprod marker)
+# and list the endpoints you are willing to mutate. Janus will then:
+#   1) POST without credentials and flag a 2xx as WRITE-UNAUTH (critical)
+#   2) replay the body with privileged fields (role, price, owner_id, ...) and
+#      flag echoed values as WRITE-MASS-ASSIGN (high)
+#   3) compare the same path under GET for WRITE-VERB-TAMPER (medium)
+# Only these URLs are touched. Nothing is deleted; you clean up the rows.
+#
+# [[write.targets]]
+# url = "https://staging.example.com/api/orders"
+# method = "POST"
+# body = { product_id = 1, qty = 1 }
+# expect_auth = true
+#
+# mass_assignment_fields = ["role", "is_staff", "owner_id", "price", "approved"]

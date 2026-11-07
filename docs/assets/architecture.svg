@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560" role="img" aria-labelledby="t d" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+  <title id="t">Janus architecture</title>
+  <desc id="d">Source roots and scoped targets pass through the scope.toml authorization gate into two engines. Both write normalized findings into one register, which produces Markdown, JSON, SARIF and coverage reports and feeds the local dashboard.</desc>
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .box{fill:#ffffff;stroke:#94a3b8;stroke-width:1.5}
+      .gate{fill:#fef3c7;stroke:#b45309;stroke-width:2}
+      .core{fill:#e0f2fe;stroke:#0369a1;stroke-width:1.5}
+      .out{fill:#f1f5f9;stroke:#94a3b8;stroke-width:1.5}
+      .opt{fill:#ffffff;stroke:#94a3b8;stroke-width:1.2;stroke-dasharray:5 3}
+      .h{font-size:16px;font-weight:700;fill:#0f172a}
+      .s{font-size:12.5px;fill:#334155}
+      .m{font-size:11.5px;fill:#64748b}
+      .ln{stroke:#475569;stroke-width:1.6;fill:none}
+    </style>
+  </defs>
+  <rect width="1200" height="560" rx="14" fill="#f8fafc" stroke="#e2e8f0"/>
+
+  <!-- inputs -->
+  <rect class="box" x="30" y="70" width="190" height="64" rx="8"/>
+  <text class="h" x="46" y="98">Source roots</text>
+  <text class="m" x="46" y="118">your repository (read only)</text>
+  <rect class="box" x="30" y="300" width="190" height="64" rx="8"/>
+  <text class="h" x="46" y="328">Scoped targets</text>
+  <text class="m" x="46" y="348">hosts you are allowed to test</text>
+
+  <!-- gate -->
+  <rect class="gate" x="262" y="150" width="170" height="150" rx="10"/>
+  <text class="h" x="278" y="178">scope.toml</text>
+  <text class="s" x="278" y="200">authorization gate</text>
+  <text class="m" x="278" y="224">allow / deny, ports</text>
+  <text class="m" x="278" y="241">forbidden paths</text>
+  <text class="m" x="278" y="258">validity window</text>
+  <text class="m" x="278" y="275">GET / HEAD / OPTIONS</text>
+  <text class="m" x="278" y="292">audit.ndjson</text>
+
+  <!-- engines -->
+  <rect class="box" x="480" y="40" width="250" height="190" rx="10"/>
+  <text class="h" x="496" y="68">code engine</text>
+  <text class="s" x="496" y="92">builtin rules (regex, entropy)</text>
+  <text class="s" x="496" y="112">gitleaks · trivy · semgrep</text>
+  <text class="m" x="496" y="134">secrets · SAST · deps · IaC</text>
+  <text class="m" x="496" y="154">a missing tool is "skipped",</text>
+  <text class="m" x="496" y="171">a crashed one "failed"</text>
+
+  <rect class="box" x="480" y="250" width="250" height="270" rx="10"/>
+  <text class="h" x="496" y="278">recon engine</text>
+  <text class="s" x="496" y="302">passive checks, JS-bundle secrets,</text>
+  <text class="s" x="496" y="320">infra fingerprints</text>
+  <rect class="opt" x="494" y="338" width="222" height="40" rx="6"/>
+  <text class="s" x="506" y="355">nuclei</text><text class="m" x="506" y="370">opt-in: allow_active_recon</text>
+  <rect class="opt" x="494" y="386" width="222" height="58" rx="6"/>
+  <text class="s" x="506" y="403">agents</text><text class="m" x="506" y="419">opt-in: allow_agent</text>
+  <text class="m" x="506" y="435">native · strix behind allowlist proxy</text>
+  <rect class="opt" x="494" y="452" width="222" height="50" rx="6"/>
+  <text class="s" x="506" y="469">write-path checks</text><text class="m" x="506" y="486">opt-in, staging only, no DELETE</text>
+
+  <!-- register -->
+  <rect class="core" x="780" y="190" width="170" height="180" rx="10"/>
+  <text class="h" x="796" y="218">register.json</text>
+  <text class="s" x="796" y="242">one Finding model</text>
+  <text class="m" x="796" y="264">dedupe + merge</text>
+  <text class="m" x="796" y="281">redaction of secrets</text>
+  <text class="m" x="796" y="298">triage state</text>
+  <text class="m" x="796" y="315">scans/&lt;run_id&gt;/ history</text>
+  <text class="m" x="796" y="332">per-run, immutable</text>
+
+  <!-- outputs -->
+  <rect class="out" x="1000" y="60" width="170" height="52" rx="8"/>
+  <text class="s" x="1014" y="82">report.md</text><text class="m" x="1014" y="100">human report + coverage</text>
+  <rect class="out" x="1000" y="124" width="170" height="52" rx="8"/>
+  <text class="s" x="1014" y="146">findings.json</text><text class="m" x="1014" y="164">machine readable</text>
+  <rect class="out" x="1000" y="188" width="170" height="52" rx="8"/>
+  <text class="s" x="1014" y="210">findings.sarif</text><text class="m" x="1014" y="228">code scanning / IDEs</text>
+  <rect class="out" x="1000" y="252" width="170" height="52" rx="8"/>
+  <text class="s" x="1014" y="274">coverage.json</text><text class="m" x="1014" y="292">what was NOT tested</text>
+  <rect class="core" x="1000" y="352" width="170" height="86" rx="8"/>
+  <text class="h" x="1014" y="378">dashboard</text>
+  <text class="m" x="1014" y="398">local, no build, no telemetry</text>
+  <text class="m" x="1014" y="415">#/  ·  #/scans  ·  #/scans?id=</text>
+
+  <!-- arrows -->
+  <path class="ln" d="M220 102 L262 190" marker-end="url(#a)"/>
+  <path class="ln" d="M220 332 L262 262" marker-end="url(#a)"/>
+  <path class="ln" d="M432 205 L480 135" marker-end="url(#a)"/>
+  <path class="ln" d="M432 245 L480 360" marker-end="url(#a)"/>
+  <path class="ln" d="M730 135 L780 250" marker-end="url(#a)"/>
+  <path class="ln" d="M730 380 L780 310" marker-end="url(#a)"/>
+  <path class="ln" d="M950 250 L1000 150" marker-end="url(#a)"/>
+  <path class="ln" d="M950 280 L1000 278" marker-end="url(#a)"/>
+  <path class="ln" d="M950 330 L1000 380" marker-end="url(#a)"/>
+  <text class="m" x="30" y="545">Both engines refuse to run without a valid scope. Every allow/deny decision is appended to audit.ndjson.</text>
+</svg>

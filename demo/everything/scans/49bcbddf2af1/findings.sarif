@@ -1,0 +1,470 @@
+{
+  "version": "2.1.0",
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/Schemata/sarif-schema-2.1.0.json",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "janus",
+          "rules": [
+            {
+              "id": "builtin/SECRET-AWS-ACCESS-KEY",
+              "name": "AWS access key ID",
+              "shortDescription": {
+                "text": "AWS access key ID"
+              },
+              "fullDescription": {
+                "text": "AWS access key ID found in source. Treat as compromised: rotate it, then remove it from history."
+              },
+              "properties": {
+                "tags": [
+                  "secrets",
+                  "CWE-798",
+                  "A07:2021"
+                ]
+              }
+            },
+            {
+              "id": "builtin/SECRET-STRIPE-LIVE",
+              "name": "Stripe live key",
+              "shortDescription": {
+                "text": "Stripe live key"
+              },
+              "fullDescription": {
+                "text": "Stripe live key found in source. Treat as compromised: rotate it, then remove it from history."
+              },
+              "properties": {
+                "tags": [
+                  "secrets",
+                  "CWE-798",
+                  "A07:2021"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/HEADER-MISSING",
+              "name": "Missing security headers: content-security-policy, strict-transport-security, x-frame-options, x-content-type-options, referrer-policy, permissions-policy",
+              "shortDescription": {
+                "text": "Missing security headers: content-security-policy, strict-transport-security, x-frame-options, x-content-type-options, referrer-policy, permissions-policy"
+              },
+              "fullDescription": {
+                "text": "Response is missing: content-security-policy, strict-transport-security, x-frame-options, x-content-type-options, referrer-policy, permissions-policy."
+              },
+              "properties": {
+                "tags": [
+                  "configuration"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/HEADER-SERVER-VERSION",
+              "name": "Server banner discloses version: BaseHTTP/0.6 Python/3.14.7",
+              "shortDescription": {
+                "text": "Server banner discloses version: BaseHTTP/0.6 Python/3.14.7"
+              },
+              "fullDescription": {
+                "text": "A versioned Server header makes it trivial to match the stack against known CVEs."
+              },
+              "properties": {
+                "tags": [
+                  "exposure"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/COOKIE-FLAGS",
+              "name": "Cookie 'sid' missing secure, httponly",
+              "shortDescription": {
+                "text": "Cookie 'sid' missing secure, httponly"
+              },
+              "fullDescription": {
+                "text": "Cookie is missing: secure, httponly. Without Secure it can be sent over plain HTTP; without HttpOnly, JavaScript (and so XSS) can read it."
+              },
+              "properties": {
+                "tags": [
+                  "configuration"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/COOKIE-NO-SAMESITE",
+              "name": "Cookie 'sid' has no SameSite attribute",
+              "shortDescription": {
+                "text": "Cookie 'sid' has no SameSite attribute"
+              },
+              "fullDescription": {
+                "text": "No SameSite attribute set. Browsers default this to Lax, but an explicit value documents intent and protects older/embedded clients."
+              },
+              "properties": {
+                "tags": [
+                  "configuration"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/CORS-REFLECTED",
+              "name": "CORS reflects an arbitrary Origin",
+              "shortDescription": {
+                "text": "CORS reflects an arbitrary Origin"
+              },
+              "fullDescription": {
+                "text": "Access-Control-Allow-Origin echoed back our made-up probe origin ('https://janus-cors-probe.invalid') together with Allow-Credentials: true, meaning any website can read authenticated responses from this origin via a victim's browser."
+              },
+              "properties": {
+                "tags": [
+                  "configuration",
+                  "CWE-942",
+                  "A05:2021"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/SENSITIVE-PATH",
+              "name": "Potentially exposed path: /.git/config",
+              "shortDescription": {
+                "text": "Potentially exposed path: /.git/config"
+              },
+              "fullDescription": {
+                "text": "GET /.git/config returned 200 with a body that differs from the baseline 404/fallback, so this looks like a real, reachable endpoint."
+              },
+              "properties": {
+                "tags": [
+                  "exposure"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/SENSITIVE-PATH-PROTECTED",
+              "name": "Auth-protected path confirmed reachable: /admin",
+              "shortDescription": {
+                "text": "Auth-protected path confirmed reachable: /admin"
+              },
+              "fullDescription": {
+                "text": "GET /admin returned 401: the path exists and is protected by authentication. This is expected for admin surfaces; it is reported so the inventory is complete, not as a break-in."
+              },
+              "properties": {
+                "tags": [
+                  "exposure"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/JS-SECRET-AWS-ACCESS-KEY",
+              "name": "AWS access key ID found in shipped JS bundle",
+              "shortDescription": {
+                "text": "AWS access key ID found in shipped JS bundle"
+              },
+              "fullDescription": {
+                "text": "AWS access key ID is embedded in a publicly served JS bundle: shipped to every visitor's browser and trivially extractable. Treat as compromised."
+              },
+              "properties": {
+                "tags": [
+                  "secrets",
+                  "CWE-798",
+                  "A07:2021"
+                ]
+              }
+            },
+            {
+              "id": "passive-recon/JS-CLIENT-KEY-SECRET-STRIPE-LIVE",
+              "name": "Publishable key shipped in JS bundle: Stripe live key",
+              "shortDescription": {
+                "text": "Publishable key shipped in JS bundle: Stripe live key"
+              },
+              "fullDescription": {
+                "text": "Stripe live key with a publishable-key prefix is present in client JS. That is expected for this key type, but it must be restricted at the provider (allowed referrers, allowed APIs) or it can be abused for quota/billing."
+              },
+              "properties": {
+                "tags": [
+                  "secrets"
+                ]
+              }
+            },
+            {
+              "id": "nuclei/git-config",
+              "name": "Git Configuration - Detect",
+              "shortDescription": {
+                "text": "Git Configuration - Detect"
+              },
+              "fullDescription": {
+                "text": "Git configuration was detected via the pattern /.git/config and log file on passed URLs."
+              },
+              "properties": {
+                "tags": [
+                  "exposure",
+                  "cwe-200"
+                ]
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "builtin/SECRET-AWS-ACCESS-KEY",
+          "level": "error",
+          "message": {
+            "text": "AWS access key ID found in source. Treat as compromised: rotate it, then remove it from history."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/Janus/examples/lab_app/server.py"
+                },
+                "region": {
+                  "startLine": 29
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "ff50790250647b3f513d"
+          }
+        },
+        {
+          "ruleId": "builtin/SECRET-STRIPE-LIVE",
+          "level": "error",
+          "message": {
+            "text": "Stripe live key found in source. Treat as compromised: rotate it, then remove it from history."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "D:/Janus/examples/lab_app/server.py"
+                },
+                "region": {
+                  "startLine": 30
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "76d1d2f546508fcb3687"
+          }
+        },
+        {
+          "ruleId": "passive-recon/HEADER-MISSING",
+          "level": "note",
+          "message": {
+            "text": "Response is missing: content-security-policy, strict-transport-security, x-frame-options, x-content-type-options, referrer-policy, permissions-policy."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "fa3638c1c1bd9cde655f"
+          }
+        },
+        {
+          "ruleId": "passive-recon/HEADER-SERVER-VERSION",
+          "level": "note",
+          "message": {
+            "text": "A versioned Server header makes it trivial to match the stack against known CVEs."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "364d8db96dca281c695b"
+          }
+        },
+        {
+          "ruleId": "passive-recon/COOKIE-FLAGS",
+          "level": "warning",
+          "message": {
+            "text": "Cookie is missing: secure, httponly. Without Secure it can be sent over plain HTTP; without HttpOnly, JavaScript (and so XSS) can read it."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "99c8682a4823d0a93f3b"
+          }
+        },
+        {
+          "ruleId": "passive-recon/COOKIE-NO-SAMESITE",
+          "level": "note",
+          "message": {
+            "text": "No SameSite attribute set. Browsers default this to Lax, but an explicit value documents intent and protects older/embedded clients."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "93183aa6694c8095d834"
+          }
+        },
+        {
+          "ruleId": "passive-recon/CORS-REFLECTED",
+          "level": "error",
+          "message": {
+            "text": "Access-Control-Allow-Origin echoed back our made-up probe origin ('https://janus-cors-probe.invalid') together with Allow-Credentials: true, meaning any website can read authenticated responses from this origin via a victim's browser."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "6dfcad388f0433888939"
+          }
+        },
+        {
+          "ruleId": "passive-recon/SENSITIVE-PATH",
+          "level": "error",
+          "message": {
+            "text": "GET /.git/config returned 200 with a body that differs from the baseline 404/fallback, so this looks like a real, reachable endpoint."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099/.git/config"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "6bb9ada3c77a50667dcb"
+          }
+        },
+        {
+          "ruleId": "passive-recon/SENSITIVE-PATH-PROTECTED",
+          "level": "note",
+          "message": {
+            "text": "GET /admin returned 401: the path exists and is protected by authentication. This is expected for admin surfaces; it is reported so the inventory is complete, not as a break-in."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099/admin"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "d4c215f732daafe79df8"
+          }
+        },
+        {
+          "ruleId": "passive-recon/JS-SECRET-AWS-ACCESS-KEY",
+          "level": "error",
+          "message": {
+            "text": "AWS access key ID is embedded in a publicly served JS bundle: shipped to every visitor's browser and trivially extractable. Treat as compromised."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099/static/app.js"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "a55836dc56457e04d111"
+          }
+        },
+        {
+          "ruleId": "passive-recon/JS-CLIENT-KEY-SECRET-STRIPE-LIVE",
+          "level": "note",
+          "message": {
+            "text": "Stripe live key with a publishable-key prefix is present in client JS. That is expected for this key type, but it must be restricted at the provider (allowed referrers, allowed APIs) or it can be abused for quota/billing."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099/static/app.js"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "acaff9bd33e3a24a31eb"
+          }
+        },
+        {
+          "ruleId": "nuclei/git-config",
+          "level": "warning",
+          "message": {
+            "text": "Git configuration was detected via the pattern /.git/config and log file on passed URLs."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "http://127.0.0.1:8099/.git/config"
+                },
+                "region": {
+                  "startLine": 1
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "janus/v1": "d943c22cc970717cc97e"
+          }
+        }
+      ]
+    }
+  ]
+}

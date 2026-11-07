@@ -1,0 +1,4 @@
+# Synthetic config fixture — see app.py docstring.
+debug: true
+allow_origins: "*"
+api_key: "not-a-real-token-but-looks-like-one-1234"

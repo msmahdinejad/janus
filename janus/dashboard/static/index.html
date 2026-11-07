@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Janus — Findings console</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2.5a13.5 13.5 0 0 0 0 27z' fill='%230d9488'/%3E%3Cpath d='M16 2.5a13.5 13.5 0 0 1 0 27z' fill='%237c3aed'/%3E%3C/svg%3E" />
+  <script>
+    // Apply the saved theme before first paint (no flash). Default = follow the OS.
+    try {
+      var t = localStorage.getItem("janus.theme");
+      if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+      document.documentElement.setAttribute("data-density", localStorage.getItem("janus.density") || "comfortable");
+    } catch (e) {}
+  </script>
+  <script>
+    // Assets are loaded with a per-page-load cache-buster: this is a local tool
+    // with ~15 tiny files, and it guarantees that after upgrading Janus a stale
+    // cached script never meets a newer API. (static/style.css remains as a
+    // single-file @import manifest of the same stylesheets.)
+    window.__v = Date.now();
+    ["tokens", "base", "layout", "components", "views", "scans"].forEach(function (n) {
+      document.write('<link rel="stylesheet" href="/static/css/' + n + '.css?v=' + window.__v + '">');
+    });
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#page">Skip to content</a>
+  <div class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Primary">
+      <div class="brand" id="brand"></div>
+      <nav class="nav" id="nav" aria-label="Views"></nav>
+      <div class="sidebar-foot">
+        <div class="reg-path" id="regPath"></div>
+        <div class="foot-actions">
+          <button class="btn icon ghost" id="themeBtn" aria-label="Theme"></button>
+          <button class="btn icon ghost" id="densityBtn" aria-label="Row density"></button>
+          <button class="btn icon ghost" id="helpBtn" aria-label="Keyboard shortcuts" data-tip="Keyboard shortcuts  (?)"></button>
+        </div>
+      </div>
+    </aside>
+
+    <div class="main" id="main">
+      <header class="topbar">
+        <button class="btn icon ghost menu-toggle" id="menuBtn" aria-label="Open navigation"></button>
+        <div class="crumb" id="crumb"></div>
+        <div class="top-spacer"></div>
+        <span class="updated" id="updated" aria-live="polite"></span>
+        <button class="btn" id="refreshBtn" aria-label="Refresh data" data-tip="Reload findings  (r)"></button>
+        <button class="cmdk-btn" id="cmdkBtn" aria-label="Open command palette"></button>
+      </header>
+      <main class="page" id="page" tabindex="-1" aria-live="polite"></main>
+    </div>
+  </div>
+
+  <aside class="drawer" id="drawer" aria-hidden="true" aria-label="Finding details"></aside>
+  <div class="drawer-scrim" id="drawerScrim"></div>
+  <div class="scrim hidden" id="navScrim"></div>
+  <div class="bulk" id="bulk" role="toolbar" aria-label="Bulk actions"></div>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <noscript><p style="padding:24px">The Janus dashboard needs JavaScript (no build step, no external requests).</p></noscript>
+
+  <script>
+    // Order matters: each file extends the shared `J` namespace.
+    ["js/util", "js/icons", "js/ui", "js/charts", "js/store", "js/drawer", "js/views/shared", "js/views/overview",
+     "js/views/explorer", "js/views/assets", "js/views/coverage", "js/views/timeline", "js/views/scans-core", "js/views/scans", "app"].forEach(function (n) {
+      document.write('<script src="/static/' + n + '.js?v=' + window.__v + '"><\/script>');
+    });
+  </script>
+</body>
+</html>
