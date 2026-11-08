@@ -65,6 +65,9 @@ Hard rules:
    forbidden and must not be attempted another way.
 6. Keep requests few and purposeful. Your request budget is shared with the
    rest of the scan and is enforced.
+7. HTTP tool status and body belong to the FINAL response URL. Read the
+   redirect_chain before making transport claims: an HTTP request that
+   redirects to HTTPS and then returns 200 did not serve its body over HTTP.
 
 Work like a careful pentester: fetch the entry point, look at headers and
 cookies, discover API endpoints and JS bundles, then probe the highest-value
@@ -217,6 +220,10 @@ class NativeAgent:
                             llm_transport=llm_transport)
         (out_dir / "transcript.json").write_text(
             json.dumps(result.transcript, indent=2, ensure_ascii=False), encoding="utf-8")
+        # Preserve provider evidence before ensemble deduplication mutates it.
+        (out_dir / "findings.json").write_text(
+            json.dumps([f.to_dict() for f in result.findings], indent=2, ensure_ascii=False),
+            encoding="utf-8")
         return ToolResult(label, result.status, findings=result.findings, detail=result.detail)
 
     # -- internals -----------------------------------------------------
@@ -231,8 +238,11 @@ class NativeAgent:
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": self._task(targets, extra_instruction)},
         ]
-        response_id: str | None = None
-        response_input: str | list[dict[str, Any]] = self._task(targets, extra_instruction)
+        # Replay the conversation explicitly: Responses gateways such as ai-sub
+        # do not persist previous_response_id, and GLM requires message items.
+        response_input: list[dict[str, Any]] = [
+            {"role": "user", "content": self._task(targets, extra_instruction)},
+        ]
         transcript.append({"at": utc_now_iso(), "event": "task", "targets": targets})
 
         client = httpx.Client(
@@ -252,11 +262,8 @@ class NativeAgent:
                         "tools": _responses_tools(tools_payload),
                         "tool_choice": "auto",
                         "input": response_input,
+                        "instructions": SYSTEM_PROMPT,
                     }
-                    if response_id:
-                        payload["previous_response_id"] = response_id
-                    else:
-                        payload["instructions"] = SYSTEM_PROMPT
                     endpoint = f"{provider.base_url.rstrip('/')}/responses"
                 else:
                     payload = {
@@ -278,8 +285,8 @@ class NativeAgent:
                                        f"LLM HTTP {status}: {redact_text(err_body[:500])}", status="failed")
                 try:
                     if use_responses:
-                        response_id = str(data.get("id") or response_id or "") or None
                         message_text, calls = _parse_response_output(data)
+                        response_input.extend(data.get("output") or [])
                         message = {"content": message_text}
                     else:
                         message = data["choices"][0]["message"]
@@ -293,7 +300,8 @@ class NativeAgent:
                                      **({"tool_calls": calls} if calls else {})})
                 transcript.append({"at": utc_now_iso(), "turn": turn,
                                    "content": redact_text(message.get("content") or ""),
-                                   "tool_calls": [c.get("function", {}).get("name") for c in calls]})
+                                   "tool_calls": [c.get("name") if use_responses else
+                                                  c.get("function", {}).get("name") for c in calls]})
 
                 if not calls:
                     break
@@ -342,13 +350,17 @@ class NativeAgent:
                 if finished:
                     break
                 if use_responses:
-                    response_input = response_outputs
+                    response_input.extend(response_outputs)
+            else:
+                return AgentResult(findings, transcript,
+                                   f"turn budget reached after {turn + 1} turns; assessment incomplete",
+                                   status="partial")
         finally:
             client.close()
 
         return AgentResult(
             findings, transcript,
-            f"{len(findings)} findings over {len(transcript)} turns (model: {provider.model})",
+            f"{len(findings)} findings over {len(transcript) - 1} turns (model: {provider.model})",
         )
 
     def _send(self, client, endpoint: str, payload: dict[str, Any], provider: ProviderProfile,
@@ -400,6 +412,7 @@ class NativeAgent:
         url = str(args.get("url", "")).strip()
         if not url:
             return "error: url is required", None
+        log_start = len(http.log)
         try:
             resp = http.get(url)
         except ScopeDenied as exc:
@@ -410,11 +423,16 @@ class NativeAgent:
         interesting = {k: resp.header(k) for k in (
             "content-type", "content-length", "location", "server",
             "x-frame-options", "content-security-policy", "access-control-allow-origin",
+            "strict-transport-security", "x-content-type-options", "referrer-policy",
+            "permissions-policy",
         ) if resp.header(k)}
         body = redact_text(resp.text[:MAX_TOOL_RESULT_CHARS])
         content = json.dumps({
+            "requested_url": url,
             "status": resp.status,
             "url": resp.url,
+            "redirect_chain": [{"url": row["url"], "status": row["status"]}
+                               for row in http.log[log_start:]],
             "headers": interesting,
             "body_truncated": resp.truncated or len(resp.text) > MAX_TOOL_RESULT_CHARS,
             "body": body,

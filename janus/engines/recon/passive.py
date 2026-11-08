@@ -339,6 +339,10 @@ def _txt_records(domain: str, client: httpx.Client) -> tuple[list[str], bool]:
             data = resp.json()
         except Exception:  # noqa: BLE001
             continue
+        # HTTP 200 is not a successful DNS lookup: SERVFAIL/REFUSED return
+        # an empty Answer too. Only NOERROR/NXDOMAIN support absence claims.
+        if data.get("Status") not in (0, 3):
+            continue
         return [str(a.get("data", "")) for a in data.get("Answer", []) or []], True
 
     # Last resort: the system resolver. Works on Windows and POSIX and uses the

@@ -126,6 +126,32 @@ class StrixAdapter:
             "LITELLM_LOCAL_MODEL_COST_MAP": "True",
         }
         started = time.time()
+
+        def _fresh(pattern: str) -> list[Path]:
+            return sorted(
+                (p for p in out_dir.rglob(pattern) if p.stat().st_mtime >= started - 60),
+                key=lambda p: p.stat().st_mtime, reverse=True,
+            )
+
+        def _no_traffic_report() -> Path | None:
+            reports = _fresh("penetration_test_report.md")
+            if not reports:
+                return None
+            report = reports[0]
+            report_text = report.read_text(encoding="utf-8", errors="replace").lower().replace("**", "")
+            no_traffic_markers = (
+                "no http requests were sent",
+                "no http exchanges with the target",
+                "no request was issued",
+                "before a single request was issued",
+                "before the first request was issued to the target",
+                "no security assessment results are available",
+                "assessment status: incomplete",
+                "actual execution: none beyond scope definition",
+                "no traffic was generated",
+            )
+            return report if any(marker in report_text for marker in no_traffic_markers) else None
+
         try:
             proc = subprocess.run(args, capture_output=True, text=True,
                                   encoding="utf-8", errors="replace",
@@ -147,18 +173,34 @@ class StrixAdapter:
             # A budget cap (MaxTurnsExceeded) is a stop condition, not a crash:
             # if the run still wrote its SARIF, that evidence is valid and is
             # imported as a partial result instead of being discarded.
-            fresh = sorted(
-                (p for p in out_dir.rglob("findings.sarif") if p.stat().st_mtime >= started - 60),
-                key=lambda p: p.stat().st_mtime, reverse=True,
-            )
+            fresh = _fresh("findings.sarif")
             if fresh:
+                report = _no_traffic_report()
+                if report:
+                    return ToolResult(
+                        label,
+                        "failed",
+                        detail=(
+                            "agent report says no requests reached the target; 0 findings is not a "
+                            f"clean result (report: {report})"
+                        ),
+                    )
                 try:
                     partial = _parse_strix_sarif(fresh[0], label, provider)
                 except Exception:  # noqa: BLE001
                     partial = []
+                if not partial:
+                    return ToolResult(
+                        label,
+                        "failed",
+                        detail=(
+                            "partial agent artifact contains no findings and no report proves that "
+                            "the target was tested; 0 findings is not a clean result"
+                        ),
+                    )
                 tail = (proc.stderr or proc.stdout or "").strip().replace("\n", " ")
                 why = "turn budget reached" if "MaxTurnsExceeded" in (proc.stderr or "") else f"exit {proc.returncode}"
-                return ToolResult(label, "ok", findings=partial,
+                return ToolResult(label, "partial", findings=partial,
                                   detail=f"partial ({why}): {len(partial)} findings; "
                                          f"report: {fresh[0].parent / 'penetration_test_report.md'}")
             tail = (proc.stderr or proc.stdout or "").strip().replace("\n", " ")
@@ -169,14 +211,18 @@ class StrixAdapter:
         # `findings.sarif` under `strix_runs/<target>_<id>/`, not the older
         # `vulnerabilities.json`. Accept both, newest first, and only artifacts
         # this run produced.
-        def _fresh(pattern: str) -> list:
-            return sorted(
-                (p for p in out_dir.rglob(pattern) if p.stat().st_mtime >= started - 60),
-                key=lambda p: p.stat().st_mtime, reverse=True,
-            )
-
         sarif_files = _fresh("findings.sarif")
         legacy = _fresh("vulnerabilities.json")
+        report = _no_traffic_report()
+        if report:
+            return ToolResult(
+                label,
+                "failed",
+                detail=(
+                    "agent report says no requests reached the target; 0 findings is not a "
+                    f"clean result (report: {report})"
+                ),
+            )
         if sarif_files:
             try:
                 findings = _parse_strix_sarif(sarif_files[0], label, provider)
@@ -209,8 +255,8 @@ class StrixAdapter:
             return ToolResult(label, "ok", findings=findings,
                               detail=f"{len(findings)} findings (model: {provider.model})")
 
-        return ToolResult(label, "ok",
-                          detail=f"exit {proc.returncode}, no fresh SARIF/vulnerabilities.json (0 findings)")
+        return ToolResult(label, "failed",
+                          detail=f"exit {proc.returncode}, no fresh SARIF/vulnerabilities.json; result unavailable")
 
 
 def _parse_strix_sarif(path, label: str, provider) -> list[Finding]:
@@ -248,11 +294,18 @@ def _parse_strix_sarif(path, label: str, provider) -> list[Finding]:
         title = (rule.get("name") or message or rule_id or "agent finding")[:160]
         level = str(res.get("level") or "").lower()
         props = res.get("properties") or {}
-        severity = map_severity(props.get("severity") or {
+        metadata = props.get("strix") if isinstance(props.get("strix"), dict) else {}
+        severity = map_severity(props.get("severity") or metadata.get("severity") or {
             "error": "high", "warning": "medium", "note": "low",
         }.get(level, "medium"))
         loc = ((res.get("locations") or [{}])[0] or {}).get("physicalLocation", {})
         url = (loc.get("artifactLocation") or {}).get("uri", "")
+        # Strix can use SECURITY.md as a synthetic SARIF location for a web
+        # issue. Its target/endpoint metadata carries the actual affected URL.
+        url = str(metadata.get("target") or url)
+        remediation = metadata.get("remediation_steps")
+        if isinstance(remediation, list):
+            remediation = "\n".join(str(step) for step in remediation)
         line = (loc.get("region") or {}).get("startLine", 0) or 0
         if coverage_note:
             severity, confidence = "low", "needs-review"
@@ -260,12 +313,12 @@ def _parse_strix_sarif(path, label: str, provider) -> list[Finding]:
             title=title, severity=severity, category="other", engine="recon",
             tool=label, rule_id=rule_id or "strix",
             target=url, host=url.split("/")[2] if "//" in url else "",
-            endpoint=url, method="GET",
+            endpoint=str(metadata.get("endpoint") or url), method=str(metadata.get("method") or "GET"),
             message=message,
-            remediation="See the Strix report next to this run for reproduction steps and fixes.",
+            remediation=str(remediation or "See the Strix report next to this run for reproduction steps and fixes."),
             confidence="needs-review",
             extra={"model": provider.model, "sarif_level": level,
-                   "evidence": (props.get("evidence") or "")[:2000]},
+                   "evidence": str(props.get("evidence") or metadata.get("technical_analysis") or "")[:2000]},
             sources=(label,),
         ))
     return findings

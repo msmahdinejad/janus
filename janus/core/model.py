@@ -186,6 +186,14 @@ class Finding:
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:20]
 
     @property
+    def rule_identity(self) -> str:
+        # Native agents reuse a generic rule ID for unrelated vulnerabilities.
+        # The URL alone cannot distinguish transport, CSP, and disclosure bugs.
+        if self.engine == "recon" and self.rule_id == "AGENT-FINDING":
+            return f"{self.rule_id}:{self.title.strip().lower()}"
+        return self.rule_id
+
+    @property
     def dedupe_key(self) -> str:
         """Used to merge near-duplicates.
 
@@ -204,7 +212,7 @@ class Finding:
             # 57 of 58 Trivy findings away. Cross-tool duplicates are handled
             # by the second pass in dedupe().
             return f"code:{self.location_key}:{self.category}:{self.rule_id or self.title}"
-        return f"recon:{self.location_key}:{self.category}:{self.rule_id}"
+        return f"recon:{self.location_key}:{self.category}:{self.rule_identity}"
 
     def to_dict(self) -> dict[str, Any]:
         d = asdict(self)
@@ -287,7 +295,7 @@ def aggregate_repetitive(
     exempted."""
     groups: dict[str, list[Finding]] = {}
     for f in findings:
-        groups.setdefault(f"{f.tool}:{f.rule_id}:{f.category}", []).append(f)
+        groups.setdefault(f"{f.tool}:{f.rule_identity}:{f.category}", []).append(f)
 
     out: list[Finding] = []
     for key, group in groups.items():

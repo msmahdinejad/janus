@@ -160,7 +160,10 @@ def probe_models(profile: ProviderProfile, timeout: float = 15.0) -> tuple[list[
         if resp.status_code >= 400:
             return None, f"HTTP {resp.status_code}"
         data = resp.json()
-        ids = [m.get("id", "") for m in data.get("data", []) if isinstance(m, dict)]
+        models = data.get("data", data.get("models", []))
+        if not isinstance(models, list):
+            return None, "unrecognized model catalogue format"
+        ids = [m.get("id") or m.get("slug", "") for m in models if isinstance(m, dict)]
         return [i for i in ids if i], ""
     except Exception as exc:  # noqa: BLE001
         return None, str(exc)[:160]

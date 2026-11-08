@@ -70,7 +70,7 @@ def build(
         lens_rows.append({
             "id": lens.id,
             "title": lens.title,
-            "status": "ran" if mode == "agent" else "not-run (agent mode off)",
+            "status": "requested (execution unverified)" if mode == "agent" else "not-run (agent mode off)",
             "owasp": list(lens.owasp),
             "findings": len(matched),
         })
@@ -90,14 +90,18 @@ def build(
     gaps: list[str] = []
     for tool in tools:
         if tool["status"] == "skipped":
-            gaps.append(f"{tool['id']} not installed - {tool['detail']}")
+            gaps.append(f"{tool['id']} skipped - {tool['detail']}")
         elif tool["status"] == "failed":
             gaps.append(f"{tool['id']} failed - {tool['detail'][:120]}")
+        elif tool["status"] == "partial":
+            gaps.append(f"{tool['id']} incomplete - {tool['detail'][:120]}")
     # Agent lenses are optional. Only say that they were not run when the
     # caller explicitly supplied a lens selection; a code-only coverage build
     # has no agent lens surface at all and must not claim a missing test.
     if lenses and mode != "agent":
         gaps.append("AI agent lenses were not run (`--mode agent` is off or the scope forbids it)")
+    elif lenses:
+        gaps.append("Selected lenses were included in agent instructions; per-lens execution is not attested")
     if recon and recon.get("budget_used") is not None and recon.get("budget_max") is not None \
             and recon.get("budget_used") >= recon.get("budget_max"):
         gaps.append("request budget was exhausted before every check finished")
@@ -105,7 +109,7 @@ def build(
         gaps.append(f"{untagged} finding(s) carry no OWASP mapping (tool-native rules)")
 
     has_failed = any(str(row.get("status")) == "failed" for row in [*tools, *engine_rows])
-    has_degraded = any(str(row.get("status")) in {"skipped", "unknown"} for row in [*tools, *engine_rows]) or bool(gaps)
+    has_degraded = any(str(row.get("status")) in {"skipped", "unknown", "partial"} for row in [*tools, *engine_rows]) or bool(gaps)
     quality = "failed" if has_failed else "degraded" if has_degraded else "complete"
 
     return {

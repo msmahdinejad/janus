@@ -268,8 +268,11 @@ def test_native_agent_uses_responses_wire_format_for_responses_models(tmp_path, 
     first = json.loads(requests[0].content)
     second = json.loads(requests[1].content)
     assert first["tools"][0]["name"] == "http_get"
-    assert second["previous_response_id"] == "resp_1"
-    assert second["input"][0]["type"] == "function_call_output"
+    assert "previous_response_id" not in second
+    assert first["input"][0]["role"] == "user"
+    assert second["instructions"] == first["instructions"]
+    assert second["input"][1]["type"] == "function_call"
+    assert second["input"][2]["type"] == "function_call_output"
     assert target.calls == ["https://app.test/"]
 
 
@@ -441,6 +444,92 @@ def test_strix_coverage_notes_are_low_severity_and_clean_areas_are_dropped(tmp_p
     findings = _parse_strix_sarif(p, "agent:strix:p", provider)
     assert [f.rule_id for f in findings] == ["strix-coverage/authz", "CWE-527"]
     assert findings[0].severity == "low" and findings[0].confidence == "needs-review"
+
+
+def test_strix_report_with_no_requests_is_not_reported_clean(tmp_path, monkeypatch):
+    from janus.engines.recon.agent import StrixAdapter
+
+    run_dir = tmp_path / "strix_runs" / "target"
+    run_dir.mkdir(parents=True)
+    (run_dir / "penetration_test_report.md").write_text(
+        "No security assessment results are available for this engagement.\n"
+        "The budget was exhausted before the first request was issued to the target.\n",
+        encoding="utf-8",
+    )
+
+    class Completed:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    monkeypatch.setattr("janus.engines.recon.agent.find_tool", lambda name: "strix")
+    monkeypatch.setattr("janus.engines.recon.agent.subprocess.run", lambda *args, **kwargs: Completed())
+    monkeypatch.setenv("PATH", "test-path")
+
+    provider = ProviderProfile(name="p", base_url="https://llm.test", model="m", api_key_env="PATH")
+    result = StrixAdapter().run(
+        ["https://target.test"], tmp_path, AgentBudget(max_turns=1, max_budget_usd=0.1), provider,
+        egress_proxy="http://127.0.0.1:9999",
+    )
+
+    assert result.status == "failed"
+    assert "no requests" in result.detail.lower()
+
+
+def test_strix_partial_report_with_no_requests_is_not_ok(tmp_path, monkeypatch):
+    from janus.engines.recon.agent import StrixAdapter
+
+    run_dir = tmp_path / "strix_runs" / "target"
+    run_dir.mkdir(parents=True)
+    (run_dir / "findings.sarif").write_text('{"runs": []}', encoding="utf-8")
+    (run_dir / "penetration_test_report.md").write_text(
+        "Assessment stopped before a single request was issued.\n",
+        encoding="utf-8",
+    )
+
+    class Completed:
+        returncode = 1
+        stdout = ""
+        stderr = "MaxTurnsExceeded"
+
+    monkeypatch.setattr("janus.engines.recon.agent.find_tool", lambda name: "strix")
+    monkeypatch.setattr("janus.engines.recon.agent.subprocess.run", lambda *args, **kwargs: Completed())
+    monkeypatch.setenv("PATH", "test-path")
+
+    provider = ProviderProfile(name="p", base_url="https://llm.test", model="m", api_key_env="PATH")
+    result = StrixAdapter().run(
+        ["https://target.test"], tmp_path, AgentBudget(max_turns=1, max_budget_usd=0.1), provider,
+        egress_proxy="http://127.0.0.1:9999",
+    )
+
+    assert result.status == "failed"
+    assert "no requests" in result.detail.lower()
+
+
+def test_strix_empty_partial_artifact_is_not_ok(tmp_path, monkeypatch):
+    from janus.engines.recon.agent import StrixAdapter
+
+    run_dir = tmp_path / "strix_runs" / "target"
+    run_dir.mkdir(parents=True)
+    (run_dir / "findings.sarif").write_text('{"runs": []}', encoding="utf-8")
+
+    class Completed:
+        returncode = 1
+        stdout = ""
+        stderr = "MaxTurnsExceeded"
+
+    monkeypatch.setattr("janus.engines.recon.agent.find_tool", lambda name: "strix")
+    monkeypatch.setattr("janus.engines.recon.agent.subprocess.run", lambda *args, **kwargs: Completed())
+    monkeypatch.setenv("PATH", "test-path")
+
+    provider = ProviderProfile(name="p", base_url="https://llm.test", model="m", api_key_env="PATH")
+    result = StrixAdapter().run(
+        ["https://target.test"], tmp_path, AgentBudget(max_turns=1, max_budget_usd=0.1), provider,
+        egress_proxy="http://127.0.0.1:9999",
+    )
+
+    assert result.status == "failed"
+    assert "not a clean result" in result.detail.lower()
 
 def test_scan_history_records_are_immutable_per_run(tmp_path):
     from janus.dashboard.history import list_scans, load_scan, record_scan

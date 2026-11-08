@@ -139,6 +139,12 @@ def run(
 
         if not skip_passive:
             for domain in _primary_domains(scope):
+                if not scope.authorize(f"https://{domain}/", method="GET").allowed:
+                    tool_results.append(ToolResult(
+                        "email-auth", "skipped",
+                        detail=f"parent domain {domain} is outside the target scope; SPF/DMARC not assessed",
+                    ))
+                    continue
                 email_findings, lookup_ok = passive.check_email_auth(domain, discovery_client)
                 findings.extend(email_findings)
                 if not lookup_ok:

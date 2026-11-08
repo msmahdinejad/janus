@@ -18,7 +18,7 @@ from pathlib import Path
 @dataclass
 class ToolResult:
     name: str
-    status: str  # "ok" | "skipped" | "failed"
+    status: str  # "ok" | "partial" | "skipped" | "failed"
     findings: list = field(default_factory=list)
     detail: str = ""
     seconds: float = 0.0

@@ -77,6 +77,7 @@ class ReviewResult:
     agent: str
     detail: str
     raw: str
+    status: str = "ok"
 
 
 def _prompt(root: Path, lenses: list[Lens], extra: str = "") -> str:
@@ -88,19 +89,27 @@ def _prompt(root: Path, lenses: list[Lens], extra: str = "") -> str:
 
 def _extract_json(text: str) -> list[dict]:
     """Pull the JSON array out of an agent's reply, tolerating code fences."""
-    if not text:
+    try:
+        return _parse_rows(text)
+    except ValueError:
         return []
+
+
+def _parse_rows(text: str) -> list[dict]:
+    """Unlike the tolerant helper, distinguish a valid [] from a failed reply."""
+    if not text:
+        raise ValueError("empty review response")
     cleaned = re.sub(r"```(?:json)?", "", text)
     match = JSON_BLOCK_RE.search(cleaned)
     if not match:
-        return []
-    try:
-        data = json.loads(match.group(0))
-    except json.JSONDecodeError:
-        return []
-    if not isinstance(data, list):
-        return []
-    return [row for row in data if isinstance(row, dict) and row.get("title")]
+        raise ValueError("no JSON array in review response")
+    data = json.loads(match.group(0))
+    if not isinstance(data, list) or any(
+        not isinstance(row, dict) or not isinstance(row.get("title"), str) or not row["title"].strip()
+        for row in data
+    ):
+        raise ValueError("invalid finding rows in review response")
+    return data
 
 
 def _to_findings(rows: list[dict], agent: str, root: Path) -> list[Finding]:
@@ -136,7 +145,7 @@ def run(root: Path, *, agent: str = "codex", lenses: list[Lens],
         timeout: int = 1800, extra: str = "") -> ReviewResult:
     exe = find_tool(agent)
     if not exe:
-        return ReviewResult([], agent, f"{agent} CLI not found on PATH", "")
+        return ReviewResult([], agent, f"{agent} CLI not found on PATH", "", "skipped")
 
     prompt = _prompt(root.resolve(), lenses, extra)
     # Always feed the prompt on stdin: a long multi-line argument gets mangled
@@ -147,26 +156,29 @@ def run(root: Path, *, agent: str = "codex", lenses: list[Lens],
     elif agent == "claude":
         args = [exe, "-p", "--permission-mode", "plan"]
     else:
-        return ReviewResult([], agent, f"unsupported review agent {agent!r}", "")
+        return ReviewResult([], agent, f"unsupported review agent {agent!r}", "", "failed")
 
     try:
         proc = subprocess.run(args, cwd=str(root), capture_output=True, text=True,
                               timeout=timeout, input=prompt,
                               encoding="utf-8", errors="replace")
     except subprocess.TimeoutExpired:
-        return ReviewResult([], agent, "timed out", "")
+        return ReviewResult([], agent, "timed out", "", "failed")
     except Exception as exc:  # noqa: BLE001
-        return ReviewResult([], agent, str(exc), "")
+        return ReviewResult([], agent, str(exc), "", "failed")
 
-    rows = _extract_json(proc.stdout)
+    try:
+        rows = _parse_rows(proc.stdout)
+    except ValueError as exc:
+        return ReviewResult([], agent, f"exit {proc.returncode}: {exc}", proc.stdout, "failed")
     findings = _to_findings(rows, agent, root.resolve())
-    if proc.returncode != 0 and not findings:
+    if proc.returncode != 0:
         tail = (proc.stderr or proc.stdout or "").strip().replace("\n", " ")[-400:]
-        return ReviewResult([], agent, f"exit {proc.returncode}: {tail}", proc.stdout)
+        return ReviewResult(findings, agent, f"exit {proc.returncode}: {tail}", proc.stdout, "failed")
     return ReviewResult(findings, agent, f"{len(findings)} findings from source review",
                         proc.stdout)
 
 
 def tool_result(result: ReviewResult) -> ToolResult:
-    return ToolResult(f"review:{result.agent}", "ok", findings=result.findings,
+    return ToolResult(f"review:{result.agent}", result.status, findings=result.findings,
                       detail=result.detail)

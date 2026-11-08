@@ -269,9 +269,14 @@ def cmd_scan_recon(args: argparse.Namespace) -> int:
         print(f"scope error: {e}", file=sys.stderr)
         return 2
 
+    lenses = _selected_lenses(args.lens)
+    if lenses is None:
+        return 2
     run_id = f"{uuid.uuid4().hex[:12]}"
     out_dir = Path(args.out)
-    write_manifest(scope, run_id, out_dir, {"command": f"scan recon --mode {args.mode}"})
+    write_manifest(scope, run_id, out_dir, {
+        "command": f"scan recon --mode {args.mode}", "lenses": [lens.id for lens in lenses],
+    })
 
     agent_providers = []
     if args.mode == "agent":
@@ -294,7 +299,7 @@ def cmd_scan_recon(args: argparse.Namespace) -> int:
             agent_providers=agent_providers,
             cache_dir=Path(args.cache),
             tool_dirs=_tool_dirs(args.tools_dir),
-            lenses=_selected_lenses(args.lens) or [],
+            lenses=lenses,
         )
     except ScopeError as e:
         print(f"refused: {e}", file=sys.stderr)
@@ -317,7 +322,7 @@ def cmd_scan_recon(args: argparse.Namespace) -> int:
     (out_dir / f"{run_id}.probe_log.json").write_text(json.dumps(result.probe_log, indent=2), encoding="utf-8")
     coverage_doc = coverage_mod.build(
         scope_name=scope.engagement.name, mode=args.mode, findings=result.findings,
-        tool_results=result.tool_results, recon={
+        tool_results=result.tool_results, lenses=lenses, recon={
             "hosts_discovered": len(result.hosts_discovered),
             "hosts_tested": len(result.hosts_tested),
             "budget_used": result.budget_used,
@@ -329,7 +334,7 @@ def cmd_scan_recon(args: argparse.Namespace) -> int:
     )
     (out_dir / "coverage.json").write_text(json.dumps(coverage_doc, indent=2), encoding="utf-8")
     _record_scan(out_dir, run_id, scope, f"scan recon --mode {args.mode}", result.findings,
-                 result.tool_results, mode=args.mode, coverage=coverage_doc)
+                 result.tool_results, mode=args.mode, lenses=[l.id for l in lenses], coverage=coverage_doc)
     _write_reports(scope, register, out_dir, run_id)
     with (out_dir / "report.md").open("a", encoding="utf-8") as fh:
         fh.write("\n" + coverage_mod.to_markdown(coverage_doc))
@@ -671,6 +676,8 @@ def cmd_review_code(args: argparse.Namespace) -> int:
                  [tool_result(result)], mode="review",
                  lenses=[l.id for l in lenses], coverage=cov)
     _write_reports_for(out_dir, run_id, cov)
+    if result.status != "ok":
+        return 2
     return _exit_code_for([f.to_dict() for f in findings], args.fail_on or "high")
 
 
